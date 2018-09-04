@@ -1,6 +1,6 @@
 # mg_postman
 
-Missguided Postman Tests
+Postman Tests
 
 Each request suite is separated into its own folder. 
 

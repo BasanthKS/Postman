@@ -1,0 +1,19 @@
+{
+  "name": "mg_postman",
+  "version": "1.0.0",
+  "description": "Missguided Postman REPO",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MissGuided/mg-postman.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MissGuided/mg-postman/issues"
+  },
+  "homepage": "https://github.com/MissGuided/mg-postman#readme"
+}

@@ -1,0 +1,3786 @@
+{
+	"info": {
+		"_postman_id": "0acb17c5-b50f-4d45-a3a1-ffd925b294b5",
+		"name": "SOAP - APO tests",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "APO - Test initialisation",
+			"item": [
+				{
+					"name": "APO_Assertions_setup",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "9e4c8c78-4626-458c-80a0-bb3be061a054",
+								"type": "text/javascript",
+								"exec": [
+									"// Create Standard Assertions for the conifg requests",
+									"",
+									"postman.setGlobalVariable(\"loadAssertions\", function loadAssertions() {",
+									"    let assertions = {};",
+									"",
+									"    assertions.test200 = function test200(arg1) {",
+									"        console.log(arg1);",
+									"    }",
+									"    ",
+									"    assertions.assert_key_value = function assert_key_value(expected, actual, key){",
+									"        pm.test(key + \" = (Expected = \" + expected + \") => (Actual = \" + actual + \")\", function () {",
+									"        pm.expect(actual).to.eq(expected);",
+									"        });",
+									"    }",
+									"",
+									"    assertions.parse_array = function parse_array(response_array, results){",
+									"        for (const key of Object.keys(results)) {",
+									"            expected = results[key];",
+									"            actual = response_array[key];",
+									"            assertions.assert_key_value(expected, actual, key);",
+									"        }",
+									"    }",
+									"",
+									"    assertions.convert_additional_array = function convert_additional_array(additional){",
+									"        additional_key_value = {};",
+									"        additional.forEach(function (node){",
+									"            additional_key_value[node.key] = node.value;",
+									"        });",
+									"        return additional_key_value;",
+									"    }",
+									"",
+									"    return assertions;",
+									"} + '; loadAssertions();');",
+									"",
+									"// Create Login Boiler Plate",
+									"",
+									"postman.setGlobalVariable(\"loginBoilerPlate\", () => {",
+									"    // Load body",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    // Get Session ID",
+									"    session_id = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:loginResponseParam'].result",
+									"    // Create Session ID varaible",
+									"    postman.setEnvironmentVariable(\"session_id\", session_id);",
+									"    // Assert response code",
+									"    pm.test(\"Status code is 200\", function () {",
+									"        pm.response.to.have.status(200);",
+									"    });",
+									"    // Asser Session id is found",
+									"    pm.test(\"Session_id found\", function () {",
+									"        pm.expect(session_id).to.have.lengthOf(32);",
+									"    });",
+									"});",
+									"",
+									"// Updated price boiler plate testers",
+									"postman.setGlobalVariable(\"updatePriceBoilerTests\", () => {",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    ",
+									"    created = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body'].parameters.result.created;",
+									"    updated = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body'].parameters.result.updated;",
+									"    failures = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body'].parameters.result.failures;",
+									"    response = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body'].parameters.result.message;",
+									"    ",
+									"    if (failures === '1'){",
+									"        error = jsonObject['env:Envelope']['env:Body'].parameters.result.additional['SOAP-ENC:Struct'].message;",
+									"    } else {",
+									"        error = \"none\"",
+									"    }",
+									"    ",
+									"    tests[\"Products Created: \" + created] = created === '0';",
+									"    tests[\"Products Updated: \" + updated] = updated === product_count;",
+									"    tests[\"Product Failures: \" + failures] = failures === '0';",
+									"    tests[\"Response: \" + response] = updated === product_count;",
+									"    tests[\"Error Response: \" + error] = updated === product_count;",
+									"});",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {},
+						"url": {
+							"raw": "https://postman-echo.com/get",
+							"protocol": "https",
+							"host": [
+								"postman-echo",
+								"com"
+							],
+							"path": [
+								"get"
+							]
+						},
+						"description": "Set up the code for using assertions. This will generate what ever is passed into the global scope, which can then be \"eval'd\" into your requests. This is for the DRY principle for test maintenence purposes."
+					},
+					"response": []
+				},
+				{
+					"name": "SOAP - Login_single",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"eval(globals.loginBoilerPlate)();"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:loginParam>\n         <username>{{username}}</username>\n         <apiKey>{{password}}</apiKey>\n      </urn:loginParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+						},
+						"url": {
+							"raw": "{{URL}}/api/v2_soap",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v2_soap"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "APO - Test to Execute",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "82c666be-7950-4c25-b670-cd1c7fc13187",
+								"type": "text/javascript",
+								"exec": [
+									"tests_to_execute = ['APO - Product Creation Mennace', ",
+									"                    'APO - Product Creation Missguided',",
+									"                    'APO - Product Creation Footwear',",
+									"                    'APO - Product Creation Bra',",
+									"                    'APO - Product Creation Multi',",
+									"                    'APO - Product Creation Config Updates',",
+									"                    'APO::Config - Product Creation'];",
+									"                    ",
+									"pm.environment.set(\"tests_to_execute\", tests_to_execute);",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {},
+						"url": {
+							"raw": "https://postman-echo.com/get",
+							"protocol": "https",
+							"host": [
+								"postman-echo",
+								"com"
+							],
+							"path": [
+								"get"
+							]
+						},
+						"description": "Set up the code for using assertions. This will generate what ever is passed into the global scope, which can then be \"eval'd\" into your requests. This is for the DRY principle for test maintenence purposes."
+					},
+					"response": []
+				},
+				{
+					"name": "APO - Test Handler",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Get the outstanding tests",
+									"tests_outstanding = pm.environment.get(\"tests_to_execute\").toString();",
+									"tests_outstanding = tests_outstanding.split(',');",
+									"",
+									"// Evaluate if there are any tests remaining",
+									"if (tests_outstanding[0] !== \"\"){",
+									"    next_test = tests_outstanding.shift();",
+									"    console.log(\"next_test= \" +  next_test);",
+									"} else {",
+									"    console.log(\"END OF EXECUTION\")",
+									"    next_test = null;",
+									"}",
+									"",
+									"// Set current test to environment var",
+									"pm.environment.set(\"current_test\", next_test);",
+									"// Store the remaining tests in environment var",
+									"pm.environment.set(\"tests_to_execute\", tests_outstanding);",
+									"",
+									"console.log(\"next_test= \" +  next_test)",
+									"",
+									"// Set next test to execute, if null: end execution",
+									"postman.setNextRequest(next_test);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {},
+						"url": {
+							"raw": "https://postman-echo.com/get",
+							"protocol": "https",
+							"host": [
+								"postman-echo",
+								"com"
+							],
+							"path": [
+								"get"
+							]
+						},
+						"description": "Set up the code for using assertions. This will generate what ever is passed into the global scope, which can then be \"eval'd\" into your requests. This is for the DRY principle for test maintenence purposes."
+					},
+					"response": []
+				}
+			],
+			"description": "Folder to setup the initial control for the request"
+		},
+		{
+			"name": "APO - Mennace Single Product",
+			"item": [
+				{
+					"name": "APO - Product Creation Mennace",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"//test data => Need to be on a URL with mgnonprod, no CSV supplied and an environment var or test=true to use this",
+									"random = Math.floor(Math.random() * (999999 - 100000 + 1) ) + 20000000;",
+									"ean = Math.floor(Math.random() * (9999999999 - 1000000000 + 1) ) + 1000000000;",
+									"size_num = Math.floor(Math.random() * 5);",
+									"",
+									"size_array = [\"XS\",\"S\",\"M\",\"L\",\"XL\",\"XXL\"];",
+									"size_rand = size_array[size_num];",
+									"style_number = random;",
+									"sku = style_number + \"001\";",
+									"product_name = \"Test product with stlye: \" + style_number;",
+									"",
+									"colours = {",
+									"    RED: '80006',",
+									"    BLACK: '00001'",
+									"};",
+									"",
+									"colour_values = Object.values(colours)",
+									"colour = colour_values[Math.floor(Math.random() * colour_values.length)]",
+									"config_sku = style_number + \"-\" + _.findKey(colours, _.partial(_.isEqual, colour));",
+									"",
+									"test_data = {",
+									"    sku: sku,",
+									"    clothing_size: size_rand,",
+									"    colour: colour,",
+									"    weight: \"0.001\",",
+									"    season: \"AW17\",",
+									"    product_type: \"AR306\",",
+									"    name: product_name,",
+									"    fabric_content: \"Natural Fibre\",",
+									"    harmonised_code: \"6203421100\",",
+									"    style_number: style_number,",
+									"    ean: ean,",
+									"    config_sku: config_sku,",
+									"    mg_product_type: '8499',",
+									"    count: 2",
+									"}",
+									"",
+									"for (var key in test_data) {",
+									"  if (test_data.hasOwnProperty(key)) {",
+									"    postman.setEnvironmentVariable(key, test_data[key]);",
+									"  }",
+									"}",
+									""
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"var jsonObject = xml2Json(responseBody);",
+									"",
+									"// Generate Values for results",
+									"",
+									"created = jsonObject['env:Envelope']['env:Body'].parameters.result.created;",
+									"updated = jsonObject['env:Envelope']['env:Body'].parameters.result.updated;",
+									"failures = jsonObject['env:Envelope']['env:Body'].parameters.result.failures;",
+									"response = jsonObject['env:Envelope']['env:Body'].parameters.result.message;",
+									"",
+									"product_sku = jsonObject['env:Envelope']['env:Body'].parameters.result.skus;",
+									"pm.environment.set(\"product_sku\", product_sku);",
+									"magento_id = jsonObject['env:Envelope']['env:Body'].parameters.result.ids;",
+									"pm.environment.set(\"magento_id\", magento_id);",
+									"",
+									"if (failures === '1'){",
+									"    error = jsonObject['env:Envelope']['env:Body'].parameters.result.additional['SOAP-ENC:Struct'].message;",
+									"} else {",
+									"    error = \"none\"",
+									"}",
+									"",
+									"tests[\"Products Created: \" + created] = created === '1';",
+									"tests[\"Products Updated: \" + updated] = updated === '0';",
+									"tests[\"Product Failures: \" + failures] = failures === '0';",
+									"tests[\"Response: \" + response] = created === '1';",
+									"tests[\"Error Response: \" + error] = created === '1';",
+									"tests[\"Product SKU: \" + product_sku] = created === '1';",
+									"tests[\"Magento ID: \" + magento_id] = created === '1';"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\">\n  <soap:Header/>\n  <soap:Body>\n    <ns0:apoCatalogProductUpdateParam xmlns:ns0=\"urn:Magento\">\n      <sessionId>{{session_id}}</sessionId>\n      <sourceType>pm_dataloader</sourceType>\n      <productData>\n        <identifier>{{sku}}</identifier>\n        <bra_size>\n          <value/>\n        </bra_size>\n        <care_details></care_details>\n        <clothing_size>\n          <value>{{clothing_size}}</value>\n        </clothing_size>\n        <shoe_size>\n          <value/>\n        </shoe_size>\n        <colour>\n          <code>{{colour}}</code>\n        </colour>\n        <weight>\n          <value>{{weight}}</value>\n        </weight>\n        <season>{{season}}</season>\n        <product_type>\n          <value>{{product_type}}</value>\n        </product_type>\n        <name>{{name}}</name>\n        <fabric_content>\n          <code>0001</code>\n          <fibre>{{fabric_content}}</fibre>\n          <percentage>100</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <harmonised_code>{{harmonised_code}}</harmonised_code>\n        <style_number>{{style_number}}</style_number>\n        <EAN>{{ean}}</EAN>\n        <status/>\n        <cost/>\n        <product_group>{{style_number}}</product_group>\n      </productData>\n    </ns0:apoCatalogProductUpdateParam>\n  </soap:Body>\n</soap:Envelope>"
+						},
+						"url": {
+							"raw": "{{URL}}/api/v2_soap",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v2_soap"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "SOAP_get_config_id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"var jsonObject = xml2Json(responseBody);",
+									"",
+									"config_id = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body'].parameters.result.ids",
+									"",
+									"// Use a Chai assertion for confirming configurable is found",
+									"pm.test(\"Configurable ID? \" + config_id, function () {",
+									"    pm.expect(config_id).to.have.lengthOf(6);",
+									"});",
+									"",
+									"pm.environment.set(\"magento_config_id\", config_id);",
+									"",
+									"postman.setNextRequest('SOAP_assert_product_details');"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <ns0:apoCatalogProductUpdateParam xmlns:ns0=\"urn:Magento\">\n         <sessionId>{{session_id}}</sessionId>\n         <sourceType>mg_test</sourceType>\n         <productData>\n            <identifier>{{config_sku}}</identifier>\n         </productData>\n      </ns0:apoCatalogProductUpdateParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+						},
+						"url": {
+							"raw": "{{URL}}/api/v2_soap",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v2_soap"
+							]
+						},
+						"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "APO - Missguided Clothing",
+			"item": [
+				{
+					"name": "APO - Product Creation Missguided",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "2c0ca40f-f03f-42b3-8778-96ffb0bd7399",
+								"type": "text/javascript",
+								"exec": [
+									"//test data => Need to be on a URL with mgnonprod, no CSV supplied and an environment var or test=true to use this",
+									"random = Math.floor(Math.random() * (999999 - 100000 + 1) ) + 20000000;",
+									"ean = Math.floor(Math.random() * (9999999999 - 1000000000 + 1) ) + 1000000000;",
+									"size_num = Math.floor(Math.random() * 5);",
+									"",
+									"size_array = [\"04\",\"06\",\"08\",\"10\",\"12\",\"14\"];",
+									"size_rand = size_array[size_num];",
+									"style_number = random;",
+									"sku = style_number + \"001\";",
+									"product_name = \"Test product with stlye: \" + style_number;",
+									"",
+									"colours = {",
+									"    RED: '80006',",
+									"    BLACK: '00001'",
+									"};",
+									"",
+									"colour_values = Object.values(colours)",
+									"colour = colour_values[Math.floor(Math.random() * colour_values.length)]",
+									"config_sku = style_number + \"-\" + _.findKey(colours, _.partial(_.isEqual, colour));",
+									"",
+									"test_data = {",
+									"    sku: sku,",
+									"    clothing_size: size_rand,",
+									"    colour: colour,",
+									"    weight: \"0.001\",",
+									"    season: \"AW17\",",
+									"    product_type: \"AR102\",",
+									"    name: product_name,",
+									"    fabric_content: \"Natural Fibre\",",
+									"    harmonised_code: \"6203421100\",",
+									"    style_number: style_number,",
+									"    ean: ean,",
+									"    config_sku: config_sku,",
+									"    mg_product_type: '7413',",
+									"    count: 2",
+									"}",
+									"",
+									"for (var key in test_data) {",
+									"  if (test_data.hasOwnProperty(key)) {",
+									"    postman.setEnvironmentVariable(key, test_data[key]);",
+									"  }",
+									"}",
+									""
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "ce9ff36d-1ffc-4fb0-8a6a-a33b02f2c018",
+								"type": "text/javascript",
+								"exec": [
+									"var jsonObject = xml2Json(responseBody);",
+									"",
+									"// Generate Values for results",
+									"",
+									"created = jsonObject['env:Envelope']['env:Body'].parameters.result.created;",
+									"updated = jsonObject['env:Envelope']['env:Body'].parameters.result.updated;",
+									"failures = jsonObject['env:Envelope']['env:Body'].parameters.result.failures;",
+									"response = jsonObject['env:Envelope']['env:Body'].parameters.result.message;",
+									"",
+									"product_sku = jsonObject['env:Envelope']['env:Body'].parameters.result.skus;",
+									"pm.environment.set(\"product_sku\", product_sku);",
+									"magento_id = jsonObject['env:Envelope']['env:Body'].parameters.result.ids;",
+									"pm.environment.set(\"magento_id\", magento_id);",
+									"",
+									"if (failures === '1'){",
+									"    error = jsonObject['env:Envelope']['env:Body'].parameters.result.additional['SOAP-ENC:Struct'].message;",
+									"} else {",
+									"    error = \"none\"",
+									"}",
+									"",
+									"tests[\"Products Created: \" + created] = created === '1';",
+									"tests[\"Products Updated: \" + updated] = updated === '0';",
+									"tests[\"Product Failures: \" + failures] = failures === '0';",
+									"tests[\"Response: \" + response] = created === '1';",
+									"tests[\"Error Response: \" + error] = created === '1';",
+									"tests[\"Product SKU: \" + product_sku] = created === '1';",
+									"tests[\"Magento ID: \" + magento_id] = created === '1';"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\">\n  <soap:Header/>\n  <soap:Body>\n    <ns0:apoCatalogProductUpdateParam xmlns:ns0=\"urn:Magento\">\n      <sessionId>{{session_id}}</sessionId>\n      <sourceType>pm_dataloader</sourceType>\n      <productData>\n        <identifier>{{sku}}</identifier>\n        <bra_size>\n          <value/>\n        </bra_size>\n        <care_details></care_details>\n        <clothing_size>\n          <value>{{clothing_size}}</value>\n        </clothing_size>\n        <shoe_size>\n          <value/>\n        </shoe_size>\n        <colour>\n          <code>{{colour}}</code>\n        </colour>\n        <weight>\n          <value>{{weight}}</value>\n        </weight>\n        <season>{{season}}</season>\n        <product_type>\n          <value>{{product_type}}</value>\n        </product_type>\n        <name>{{name}}</name>\n        <fabric_content>\n          <code>0001</code>\n          <fibre>{{fabric_content}}</fibre>\n          <percentage>100</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <harmonised_code>{{harmonised_code}}</harmonised_code>\n        <style_number>{{style_number}}</style_number>\n        <EAN>{{ean}}</EAN>\n        <status/>\n        <cost/>\n        <product_group>{{style_number}}</product_group>\n      </productData>\n    </ns0:apoCatalogProductUpdateParam>\n  </soap:Body>\n</soap:Envelope>"
+						},
+						"url": {
+							"raw": "{{URL}}/api/v2_soap",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v2_soap"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "SOAP_get_config_id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"var jsonObject = xml2Json(responseBody);",
+									"",
+									"config_id = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body'].parameters.result.ids",
+									"",
+									"// Use a Chai assertion for confirming configurable is found",
+									"pm.test(\"Configurable ID? \" + config_id, function () {",
+									"    pm.expect(config_id).to.have.lengthOf(6);",
+									"});",
+									"",
+									"pm.environment.set(\"magento_config_id\", config_id);",
+									"",
+									"postman.setNextRequest('SOAP_assert_product_details');"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <ns0:apoCatalogProductUpdateParam xmlns:ns0=\"urn:Magento\">\n         <sessionId>{{session_id}}</sessionId>\n         <sourceType>mg_test</sourceType>\n         <productData>\n            <identifier>{{config_sku}}</identifier>\n         </productData>\n      </ns0:apoCatalogProductUpdateParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+						},
+						"url": {
+							"raw": "{{URL}}/api/v2_soap",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v2_soap"
+							]
+						},
+						"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "APO - Missguided Footwear",
+			"item": [
+				{
+					"name": "APO - Product Creation Footwear",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"//test data => Need to be on a URL with mgnonprod, no CSV supplied and an environment var or test=true to use this",
+									"random = Math.floor(Math.random() * (999999 - 100000 + 1) ) + 20000000;",
+									"ean = Math.floor(Math.random() * (9999999999 - 1000000000 + 1) ) + 1000000000;",
+									"size_num = Math.floor(Math.random() * 5);",
+									"",
+									"size_array = [\"040\",\"050\",\"060\",\"070\",\"080\",\"090\"];",
+									"size_rand = size_array[size_num];",
+									"style_number = random;",
+									"sku = style_number + \"001\";",
+									"product_name = \"Test product with stlye: \" + style_number;",
+									"",
+									"colours = {",
+									"    RED: '80006',",
+									"    BLACK: '00001'",
+									"};",
+									"",
+									"colour_values = Object.values(colours)",
+									"colour = colour_values[Math.floor(Math.random() * colour_values.length)]",
+									"config_sku = style_number + \"-\" + _.findKey(colours, _.partial(_.isEqual, colour));",
+									"",
+									"test_data = {",
+									"    sku: sku,",
+									"    shoe_size: size_rand,",
+									"    colour: colour,",
+									"    weight: \"0.001\",",
+									"    season: \"AW17\",",
+									"    product_type: \"AR122\",",
+									"    name: product_name,",
+									"    fabric_content: \"Natural Fibre\",",
+									"    harmonised_code: \"6203421100\",",
+									"    style_number: style_number,",
+									"    ean: ean,",
+									"    config_sku: config_sku,",
+									"    mg_product_type: '7408',",
+									"    count: 2",
+									"}",
+									"",
+									"for (var key in test_data) {",
+									"  if (test_data.hasOwnProperty(key)) {",
+									"    postman.setEnvironmentVariable(key, test_data[key]);",
+									"  }",
+									"}",
+									""
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"var jsonObject = xml2Json(responseBody);",
+									"",
+									"// Generate Values for results",
+									"",
+									"created = jsonObject['env:Envelope']['env:Body'].parameters.result.created;",
+									"updated = jsonObject['env:Envelope']['env:Body'].parameters.result.updated;",
+									"failures = jsonObject['env:Envelope']['env:Body'].parameters.result.failures;",
+									"response = jsonObject['env:Envelope']['env:Body'].parameters.result.message;",
+									"",
+									"product_sku = jsonObject['env:Envelope']['env:Body'].parameters.result.skus;",
+									"pm.environment.set(\"product_sku\", product_sku);",
+									"magento_id = jsonObject['env:Envelope']['env:Body'].parameters.result.ids;",
+									"pm.environment.set(\"magento_id\", magento_id);",
+									"",
+									"if (failures === '1'){",
+									"    error = jsonObject['env:Envelope']['env:Body'].parameters.result.additional['SOAP-ENC:Struct'].message;",
+									"} else {",
+									"    error = \"none\"",
+									"}",
+									"",
+									"tests[\"Products Created: \" + created] = created === '1';",
+									"tests[\"Products Updated: \" + updated] = updated === '0';",
+									"tests[\"Product Failures: \" + failures] = failures === '0';",
+									"tests[\"Response: \" + response] = created === '1';",
+									"tests[\"Error Response: \" + error] = created === '1';",
+									"tests[\"Product SKU: \" + product_sku] = created === '1';",
+									"tests[\"Magento ID: \" + magento_id] = created === '1';"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\">\n  <soap:Header/>\n  <soap:Body>\n    <ns0:apoCatalogProductUpdateParam xmlns:ns0=\"urn:Magento\">\n      <sessionId>{{session_id}}</sessionId>\n      <sourceType>pm_dataloader</sourceType>\n      <productData>\n        <identifier>{{sku}}</identifier>\n        <bra_size>\n          <value/>\n        </bra_size>\n        <care_details></care_details>\n        <clothing_size>\n          <value/>\n        </clothing_size>\n        <shoe_size>\n          <value>{{shoe_size}}</value>\n        </shoe_size>\n        <colour>\n          <code>{{colour}}</code>\n        </colour>\n        <weight>\n          <value>{{weight}}</value>\n        </weight>\n        <season>{{season}}</season>\n        <product_type>\n          <value>{{product_type}}</value>\n        </product_type>\n        <name>{{name}}</name>\n        <fabric_content>\n          <code>0001</code>\n          <fibre>{{fabric_content}}</fibre>\n          <percentage>100</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <harmonised_code>{{harmonised_code}}</harmonised_code>\n        <style_number>{{style_number}}</style_number>\n        <EAN>{{ean}}</EAN>\n        <status/>\n        <cost/>\n        <product_group>{{style_number}}</product_group>\n      </productData>\n    </ns0:apoCatalogProductUpdateParam>\n  </soap:Body>\n</soap:Envelope>"
+						},
+						"url": {
+							"raw": "{{URL}}/api/v2_soap",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v2_soap"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "SOAP_get_config_id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"var jsonObject = xml2Json(responseBody);",
+									"",
+									"config_id = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body'].parameters.result.ids",
+									"",
+									"// Use a Chai assertion for confirming configurable is found",
+									"pm.test(\"Configurable ID? \" + config_id, function () {",
+									"    pm.expect(config_id).to.have.lengthOf(6);",
+									"});",
+									"",
+									"pm.environment.set(\"magento_config_id\", config_id);",
+									"",
+									"postman.setNextRequest('SOAP_assert_product_details');"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <ns0:apoCatalogProductUpdateParam xmlns:ns0=\"urn:Magento\">\n         <sessionId>{{session_id}}</sessionId>\n         <sourceType>mg_test</sourceType>\n         <productData>\n            <identifier>{{config_sku}}</identifier>\n         </productData>\n      </ns0:apoCatalogProductUpdateParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+						},
+						"url": {
+							"raw": "{{URL}}/api/v2_soap",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v2_soap"
+							]
+						},
+						"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "APO - Missguided Bra",
+			"item": [
+				{
+					"name": "APO - Product Creation Bra",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"//test data => Need to be on a URL with mgnonprod, no CSV supplied and an environment var or test=true to use this",
+									"random = Math.floor(Math.random() * (999999 - 100000 + 1) ) + 20000000;",
+									"ean = Math.floor(Math.random() * (9999999999 - 1000000000 + 1) ) + 1000000000;",
+									"size_num = Math.floor(Math.random() * 5);",
+									"",
+									"size_array = [\"30B\",\"32B\",\"34B\",\"30C\",\"32C\",\"34C\"];",
+									"size_rand = size_array[size_num];",
+									"style_number = random;",
+									"sku = style_number + \"001\";",
+									"product_name = \"Test product with stlye: \" + style_number;",
+									"",
+									"colours = {",
+									"    RED: '80006',",
+									"    BLACK: '00001'",
+									"};",
+									"",
+									"colour_values = Object.values(colours)",
+									"colour = colour_values[Math.floor(Math.random() * colour_values.length)]",
+									"config_sku = style_number + \"-\" + _.findKey(colours, _.partial(_.isEqual, colour));",
+									"",
+									"test_data = {",
+									"    sku: sku,",
+									"    bra_size: size_rand,",
+									"    colour: colour,",
+									"    weight: \"0.001\",",
+									"    season: \"AW17\",",
+									"    product_type: \"AR111\",",
+									"    name: product_name,",
+									"    fabric_content: \"Natural Fibre\",",
+									"    harmonised_code: \"6203421100\",",
+									"    style_number: style_number,",
+									"    ean: ean,",
+									"    config_sku: config_sku,",
+									"    mg_product_type: '7991',",
+									"    count: 2",
+									"}",
+									"",
+									"for (var key in test_data) {",
+									"  if (test_data.hasOwnProperty(key)) {",
+									"    postman.setEnvironmentVariable(key, test_data[key]);",
+									"  }",
+									"}",
+									""
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"var jsonObject = xml2Json(responseBody);",
+									"",
+									"// Generate Values for results",
+									"",
+									"created = jsonObject['env:Envelope']['env:Body'].parameters.result.created;",
+									"updated = jsonObject['env:Envelope']['env:Body'].parameters.result.updated;",
+									"failures = jsonObject['env:Envelope']['env:Body'].parameters.result.failures;",
+									"response = jsonObject['env:Envelope']['env:Body'].parameters.result.message;",
+									"",
+									"product_sku = jsonObject['env:Envelope']['env:Body'].parameters.result.skus;",
+									"pm.environment.set(\"product_sku\", product_sku);",
+									"magento_id = jsonObject['env:Envelope']['env:Body'].parameters.result.ids;",
+									"pm.environment.set(\"magento_id\", magento_id);",
+									"",
+									"if (failures === '1'){",
+									"    error = jsonObject['env:Envelope']['env:Body'].parameters.result.additional['SOAP-ENC:Struct'].message;",
+									"} else {",
+									"    error = \"none\"",
+									"}",
+									"",
+									"tests[\"Products Created: \" + created] = created === '1';",
+									"tests[\"Products Updated: \" + updated] = updated === '0';",
+									"tests[\"Product Failures: \" + failures] = failures === '0';",
+									"tests[\"Response: \" + response] = created === '1';",
+									"tests[\"Error Response: \" + error] = created === '1';",
+									"tests[\"Product SKU: \" + product_sku] = created === '1';",
+									"tests[\"Magento ID: \" + magento_id] = created === '1';"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\">\n  <soap:Header/>\n  <soap:Body>\n    <ns0:apoCatalogProductUpdateParam xmlns:ns0=\"urn:Magento\">\n      <sessionId>{{session_id}}</sessionId>\n      <sourceType>pm_dataloader</sourceType>\n      <productData>\n        <identifier>{{sku}}</identifier>\n        <bra_size>\n          <value>{{bra_size}}</value>\n        </bra_size>\n        <care_details></care_details>\n        <clothing_size>\n          <value/>\n        </clothing_size>\n        <shoe_size>\n          <value/>\n        </shoe_size>\n        <colour>\n          <code>{{colour}}</code>\n        </colour>\n        <weight>\n          <value>{{weight}}</value>\n        </weight>\n        <season>{{season}}</season>\n        <product_type>\n          <value>{{product_type}}</value>\n        </product_type>\n        <name>{{name}}</name>\n        <fabric_content>\n          <code>0001</code>\n          <fibre>{{fabric_content}}</fibre>\n          <percentage>100</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <harmonised_code>{{harmonised_code}}</harmonised_code>\n        <style_number>{{style_number}}</style_number>\n        <EAN>{{ean}}</EAN>\n        <status/>\n        <cost/>\n        <product_group>{{style_number}}</product_group>\n      </productData>\n    </ns0:apoCatalogProductUpdateParam>\n  </soap:Body>\n</soap:Envelope>"
+						},
+						"url": {
+							"raw": "{{URL}}/api/v2_soap",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v2_soap"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "SOAP_get_config_id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"var jsonObject = xml2Json(responseBody);",
+									"",
+									"config_id = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body'].parameters.result.ids",
+									"",
+									"// Use a Chai assertion for confirming configurable is found",
+									"pm.test(\"Configurable ID? \" + config_id, function () {",
+									"    pm.expect(config_id).to.have.lengthOf(6);",
+									"});",
+									"",
+									"pm.environment.set(\"magento_config_id\", config_id);",
+									"",
+									"postman.setNextRequest('SOAP_assert_product_details');"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <ns0:apoCatalogProductUpdateParam xmlns:ns0=\"urn:Magento\">\n         <sessionId>{{session_id}}</sessionId>\n         <sourceType>mg_test</sourceType>\n         <productData>\n            <identifier>{{config_sku}}</identifier>\n         </productData>\n      </ns0:apoCatalogProductUpdateParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+						},
+						"url": {
+							"raw": "{{URL}}/api/v2_soap",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v2_soap"
+							]
+						},
+						"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "APO - Missguided Multi Product",
+			"item": [
+				{
+					"name": "APO - Product Creation Multi",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"//test data => Need to be on a URL with mgnonprod, no CSV supplied and an environment var or test=true to use this",
+									"random = Math.floor(Math.random() * (999999 - 100000 + 1) ) + 20000000;",
+									"ean = Math.floor(Math.random() * (9999999999 - 1000000000 + 1) ) + 1000000000;",
+									"ean2 = ean + 1;",
+									"",
+									"size_array = [\"04\",\"06\",\"08\",\"10\",\"12\",\"14\"];",
+									"size_num = Math.floor(Math.random() * size_array.length);",
+									"size_rand = size_array[size_num];",
+									"size_array.splice(size_num, 1);",
+									"size_num = Math.floor(Math.random() * size_array.length);",
+									"size_rand2 = size_array[size_num];",
+									"",
+									"style_number = random;",
+									"sku = style_number + \"001\";",
+									"sku2 = style_number + \"002\";",
+									"product_name = \"Test product with stlye: \" + style_number;",
+									"",
+									"colours = {",
+									"    RED: '80006',",
+									"    BLACK: '00001'",
+									"};",
+									"",
+									"colour_values = Object.values(colours)",
+									"colour = colour_values[Math.floor(Math.random() * colour_values.length)]",
+									"config_sku = style_number + \"-\" + _.findKey(colours, _.partial(_.isEqual, colour));",
+									"",
+									"test_data = {",
+									"    sku: sku,",
+									"    sku2: sku2,",
+									"    clothing_size: size_rand,",
+									"    clothing_size2: size_rand2,",
+									"    colour: colour,",
+									"    weight: \"0.001\",",
+									"    season: \"AW17\",",
+									"    product_type: \"AR102\",",
+									"    name: product_name,",
+									"    fabric_content: \"Natural Fibre\",",
+									"    harmonised_code: \"6203421100\",",
+									"    style_number: style_number,",
+									"    ean: ean,",
+									"    ean2: ean2,",
+									"    config_sku: config_sku,",
+									"    mg_product_type: '7413',",
+									"    count: 3",
+									"",
+									"}",
+									"",
+									"for (var key in test_data) {",
+									"  if (test_data.hasOwnProperty(key)) {",
+									"    postman.setEnvironmentVariable(key, test_data[key]);",
+									"  }",
+									"}",
+									""
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"var jsonObject = xml2Json(responseBody);",
+									"",
+									"// Generate Values for results",
+									"",
+									"created = jsonObject['env:Envelope']['env:Body'].parameters.result.created;",
+									"updated = jsonObject['env:Envelope']['env:Body'].parameters.result.updated;",
+									"failures = jsonObject['env:Envelope']['env:Body'].parameters.result.failures;",
+									"response = jsonObject['env:Envelope']['env:Body'].parameters.result.message;",
+									"",
+									"product_sku = jsonObject['env:Envelope']['env:Body'].parameters.result.skus;",
+									"product_sku = product_sku.split(\",\");",
+									"pm.environment.set(\"product_sku\", product_sku[0]);",
+									"magento_id = jsonObject['env:Envelope']['env:Body'].parameters.result.ids;",
+									"magento_id = magento_id.split(\",\");",
+									"pm.environment.set(\"magento_id\", magento_id[0]);",
+									"",
+									"if (failures === '1'){",
+									"    error = jsonObject['env:Envelope']['env:Body'].parameters.result.additional['SOAP-ENC:Struct'].message;",
+									"} else {",
+									"    error = \"none\"",
+									"}",
+									"",
+									"tests[\"Products Created: \" + created] = created === '2';",
+									"tests[\"Products Updated: \" + updated] = updated === '0';",
+									"tests[\"Product Failures: \" + failures] = failures === '0';",
+									"tests[\"Response: \" + response] = created === '2';",
+									"tests[\"Error Response: \" + error] = created === '2';",
+									"tests[\"Product SKU: \" + product_sku] = created === '2';",
+									"tests[\"Magento ID: \" + magento_id] = created === '2';"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\">\n  <soap:Header/>\n  <soap:Body>\n    <ns0:apoCatalogProductUpdateParam xmlns:ns0=\"urn:Magento\">\n      <sessionId>{{session_id}}</sessionId>\n      <sourceType>pm_dataloader</sourceType>\n      <productData>\n        <identifier>{{sku}}</identifier>\n        <bra_size>\n          <value/>\n        </bra_size>\n        <care_details></care_details>\n        <clothing_size>\n          <value>{{clothing_size}}</value>\n        </clothing_size>\n        <shoe_size>\n          <value/>\n        </shoe_size>\n        <colour>\n          <code>{{colour}}</code>\n        </colour>\n        <weight>\n          <value>{{weight}}</value>\n        </weight>\n        <season>{{season}}</season>\n        <product_type>\n          <value>{{product_type}}</value>\n        </product_type>\n        <name>{{name}}</name>\n        <fabric_content>\n          <code>0001</code>\n          <fibre>{{fabric_content}}</fibre>\n          <percentage>100</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <harmonised_code>{{harmonised_code}}</harmonised_code>\n        <style_number>{{style_number}}</style_number>\n        <EAN>{{ean}}</EAN>\n        <status/>\n        <cost/>\n        <product_group>{{style_number}}</product_group>\n      </productData>\n      <productData>\n        <identifier>{{sku2}}</identifier>\n        <bra_size>\n          <value/>\n        </bra_size>\n        <care_details></care_details>\n        <clothing_size>\n          <value>{{clothing_size2}}</value>\n        </clothing_size>\n        <shoe_size>\n          <value/>\n        </shoe_size>\n        <colour>\n          <code>{{colour}}</code>\n        </colour>\n        <weight>\n          <value>{{weight}}</value>\n        </weight>\n        <season>{{season}}</season>\n        <product_type>\n          <value>{{product_type}}</value>\n        </product_type>\n        <name>{{name}}</name>\n        <fabric_content>\n          <code>0001</code>\n          <fibre>{{fabric_content}}</fibre>\n          <percentage>100</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <harmonised_code>{{harmonised_code}}</harmonised_code>\n        <style_number>{{style_number}}</style_number>\n        <EAN>{{ean2}}</EAN>\n        <status/>\n        <cost/>\n        <product_group>{{style_number}}</product_group>\n      </productData>\n    </ns0:apoCatalogProductUpdateParam>\n  </soap:Body>\n</soap:Envelope>"
+						},
+						"url": {
+							"raw": "{{URL}}/api/v2_soap",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v2_soap"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "SOAP_get_config_id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"var jsonObject = xml2Json(responseBody);",
+									"",
+									"config_id = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body'].parameters.result.ids",
+									"",
+									"// Use a Chai assertion for confirming configurable is found",
+									"pm.test(\"Configurable ID? \" + config_id, function () {",
+									"    pm.expect(config_id).to.have.lengthOf(6);",
+									"});",
+									"",
+									"pm.environment.set(\"magento_config_id\", config_id);",
+									"",
+									"postman.setNextRequest('SOAP_assert_product_details');"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <ns0:apoCatalogProductUpdateParam xmlns:ns0=\"urn:Magento\">\n         <sessionId>{{session_id}}</sessionId>\n         <sourceType>mg_test</sourceType>\n         <productData>\n            <identifier>{{config_sku}}</identifier>\n         </productData>\n      </ns0:apoCatalogProductUpdateParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+						},
+						"url": {
+							"raw": "{{URL}}/api/v2_soap",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v2_soap"
+							]
+						},
+						"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "APO - Config Checks",
+			"item": [
+				{
+					"name": "Block Subsequent Price Updates",
+					"item": [
+						{
+							"name": "APO::Config - Product Creation",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"//test data => Need to be on a URL with mgnonprod, no CSV supplied and an environment var or test=true to use this",
+											"random = Math.floor(Math.random() * (999999 - 100000 + 1) ) + 20000000;",
+											"ean = Math.floor(Math.random() * (9999999999 - 1000000000 + 1) ) + 1000000000;",
+											"size_num = Math.floor(Math.random() * 5);",
+											"",
+											"size_array = [\"04\",\"06\",\"08\",\"10\",\"12\",\"14\"];",
+											"size_rand = size_array[size_num];",
+											"style_number = random;",
+											"sku = style_number + \"001\";",
+											"product_name = \"Test product with stlye: \" + style_number;",
+											"",
+											"colours = {",
+											"    RED: '80006',",
+											"    BLACK: '00001'",
+											"};",
+											"",
+											"colour_values = Object.values(colours)",
+											"colour = colour_values[Math.floor(Math.random() * colour_values.length)]",
+											"config_sku = style_number + \"-\" + _.findKey(colours, _.partial(_.isEqual, colour));",
+											"",
+											"test_data = {",
+											"    sku: sku,",
+											"    clothing_size: size_rand,",
+											"    colour: colour,",
+											"    weight: \"0.001\",",
+											"    season: \"AW17\",",
+											"    product_type: \"AR102\",",
+											"    name: product_name,",
+											"    fabric_content: \"Natural Fibre\",",
+											"    harmonised_code: \"6203421100\",",
+											"    style_number: style_number,",
+											"    ean: ean,",
+											"    config_sku: config_sku,",
+											"    mg_product_type: '7413',",
+											"    count: 2",
+											"}",
+											"",
+											"for (var key in test_data) {",
+											"  if (test_data.hasOwnProperty(key)) {",
+											"    postman.setEnvironmentVariable(key, test_data[key]);",
+											"  }",
+											"}",
+											""
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var jsonObject = xml2Json(responseBody);",
+											"",
+											"// Generate Values for results",
+											"",
+											"created = jsonObject['env:Envelope']['env:Body'].parameters.result.created;",
+											"updated = jsonObject['env:Envelope']['env:Body'].parameters.result.updated;",
+											"failures = jsonObject['env:Envelope']['env:Body'].parameters.result.failures;",
+											"response = jsonObject['env:Envelope']['env:Body'].parameters.result.message;",
+											"",
+											"product_sku = jsonObject['env:Envelope']['env:Body'].parameters.result.skus;",
+											"pm.environment.set(\"product_sku\", product_sku);",
+											"magento_id = jsonObject['env:Envelope']['env:Body'].parameters.result.ids;",
+											"pm.environment.set(\"magento_id\", magento_id);",
+											"",
+											"if (failures === '1'){",
+											"    error = jsonObject['env:Envelope']['env:Body'].parameters.result.additional['SOAP-ENC:Struct'].message;",
+											"} else {",
+											"    error = \"none\"",
+											"}",
+											"",
+											"tests[\"Products Created: \" + created] = created === '1';",
+											"tests[\"Products Updated: \" + updated] = updated === '0';",
+											"tests[\"Product Failures: \" + failures] = failures === '0';",
+											"tests[\"Response: \" + response] = created === '1';",
+											"tests[\"Error Response: \" + error] = created === '1';",
+											"tests[\"Product SKU: \" + product_sku] = created === '1';",
+											"tests[\"Magento ID: \" + magento_id] = created === '1';"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\">\n  <soap:Header/>\n  <soap:Body>\n    <ns0:apoCatalogProductUpdateParam xmlns:ns0=\"urn:Magento\">\n      <sessionId>{{session_id}}</sessionId>\n      <sourceType>pm_dataloader</sourceType>\n      <productData>\n        <identifier>{{sku}}</identifier>\n        <bra_size>\n          <value/>\n        </bra_size>\n        <care_details></care_details>\n        <clothing_size>\n          <value>{{clothing_size}}</value>\n        </clothing_size>\n        <shoe_size>\n          <value/>\n        </shoe_size>\n        <colour>\n          <code>{{colour}}</code>\n        </colour>\n        <weight>\n          <value>{{weight}}</value>\n        </weight>\n        <season>{{season}}</season>\n        <product_type>\n          <value>{{product_type}}</value>\n        </product_type>\n        <name>{{name}}</name>\n        <fabric_content>\n          <code>0001</code>\n          <fibre>{{fabric_content}}</fibre>\n          <percentage>100</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <harmonised_code>{{harmonised_code}}</harmonised_code>\n        <style_number>{{style_number}}</style_number>\n        <EAN>{{ean}}</EAN>\n        <status/>\n        <cost/>\n        <product_group>{{style_number}}</product_group>\n      </productData>\n    </ns0:apoCatalogProductUpdateParam>\n  </soap:Body>\n</soap:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "APO::Config - Get Config Id",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "e25ef459-2b4e-49a2-8e4f-2b2ba2032e4f",
+										"type": "text/javascript",
+										"exec": [
+											"var jsonObject = xml2Json(responseBody);",
+											"",
+											"config_id = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body'].parameters.result.ids",
+											"",
+											"// Use a Chai assertion for confirming configurable is found",
+											"pm.test(\"Configurable ID? \" + config_id, function () {",
+											"    pm.expect(config_id).to.have.lengthOf(6);",
+											"});",
+											"",
+											"pm.environment.set(\"magento_config_id\", config_id);"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <ns0:apoCatalogProductUpdateParam xmlns:ns0=\"urn:Magento\">\n         <sessionId>{{session_id}}</sessionId>\n         <sourceType>mg_test</sourceType>\n         <productData>\n            <identifier>{{config_sku}}</identifier>\n         </productData>\n      </ns0:apoCatalogProductUpdateParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam"
+							},
+							"response": []
+						},
+						{
+							"name": "APO::Config - Price Update",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"black = Math.floor(Math.random() * 2000)/100 + 5;",
+											"",
+											"pm.environment.set(\"black_price\", black);"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"product_count = pm.environment.get(\"count\")",
+											"",
+											"eval(globals.updatePriceBoilerTests)();",
+											"",
+											"black_formatted = pm.environment.get(\"black_price\").toFixed(4);",
+											"",
+											"pm.environment.set(\"black_price\", black_formatted);"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:apoCatalogProductPriceUpdateParam>\n         <sessionId>{{session_id}}</sessionId>\n         <sourceType>SAPPO</sourceType>\n         <productData>\n            <identifier>{{style_number}}</identifier>\n            <territory_price>\n              <price>{{black_price}}</price>\n                <sales_organisation>GB11</sales_organisation>\n                <distribution_channel>20</distribution_channel>\n                <currency>GBP</currency>\n            </territory_price>\n         </productData>\n      </urn:apoCatalogProductPriceUpdateParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "APO::Config - Assert Simple Price Update",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "a79eeb52-0ca3-4dcc-a2f7-26274d8d365c",
+										"type": "text/javascript",
+										"exec": [
+											""
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"id": "c98bcc1f-a0d9-4ffd-a8c5-9f59124c03d2",
+										"type": "text/javascript",
+										"exec": [
+											"var assertions = eval(globals.loadAssertions);",
+											"",
+											"// Parse result block ",
+											"var jsonObject = xml2Json(responseBody);",
+											"results_array = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductInfoResponseParam'].result;",
+											"",
+											"basic_results = {",
+											"    name: pm.environment.get(\"name\"),",
+											"    sku: pm.environment.get(\"sku\"),",
+											"    type: \"simple\",",
+											"    price: pm.environment.get(\"black_price\")",
+											"};",
+											"",
+											"assertions.parse_array(results_array, basic_results);"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductInfoRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_id}}</productId>\n         <store>0</store>\n         <attributes>\n            <attributes>\n               <complexObjectArray>price</complexObjectArray>\n               <complexObjectArray>name</complexObjectArray>\n            </attributes>\n         </attributes>\n         <productIdentifierType>productId</productIdentifierType>\n      </urn:catalogProductInfoRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam"
+							},
+							"response": []
+						},
+						{
+							"name": "APO::Config - Assert Config Price Update",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var assertions = eval(globals.loadAssertions);",
+											"",
+											"// Parse result block ",
+											"var jsonObject = xml2Json(responseBody);",
+											"results_array = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductInfoResponseParam'].result;",
+											"",
+											"basic_results = {",
+											"    name: pm.environment.get(\"name\"),",
+											"    sku: pm.environment.get(\"config_sku\"),",
+											"    type: \"configurable\",",
+											"    price: pm.environment.get(\"black_price\")",
+											"};",
+											"",
+											"assertions.parse_array(results_array, basic_results);"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductInfoRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_config_id}}</productId>\n         <store>0</store>\n         <attributes>\n            <attributes>\n               <complexObjectArray>price</complexObjectArray>\n               <complexObjectArray>name</complexObjectArray>\n            </attributes>\n         </attributes>\n         <productIdentifierType>productId</productIdentifierType>\n      </urn:catalogProductInfoRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam"
+							},
+							"response": []
+						},
+						{
+							"name": "APO::Config - Price Updated Blocked",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "609d1c36-1c1c-4ce7-afee-513958cedf3e",
+										"type": "text/javascript",
+										"exec": [
+											"black = Math.floor(Math.random() * 2000)/100 + 5;",
+											"",
+											"pm.environment.set(\"blocked_black_price\", black);"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"id": "03df1b1b-22ad-4a58-80e1-a20ee3432e76",
+										"type": "text/javascript",
+										"exec": [
+											"product_count = pm.environment.get(\"count\")",
+											"",
+											"var jsonObject = xml2Json(responseBody);",
+											"    ",
+											"created = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body'].parameters.result.created;",
+											"updated = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body'].parameters.result.updated;",
+											"failures = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body'].parameters.result.failures;",
+											"response = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body'].parameters.result.message;",
+											"    ",
+											"tests[\"Products Created: \" + created] = created === '0';",
+											"tests[\"Products Updated: \" + updated] = updated === product_count;",
+											"tests[\"Product Failures: \" + failures] = failures === '0';",
+											"tests[\"Response: \" + response] = updated === product_count;",
+											"",
+											"black_formatted = pm.environment.get(\"blocked_black_price\").toFixed(4);",
+											"",
+											"pm.environment.set(\"blocked_black_price\", black_formatted);"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:apoCatalogProductPriceUpdateParam>\n         <sessionId>{{session_id}}</sessionId>\n         <sourceType>SAPPO</sourceType>\n         <productData>\n            <identifier>{{style_number}}</identifier>\n            <territory_price>\n              <price>{{blocked_black_price}}</price>\n                <sales_organisation>GB11</sales_organisation>\n                <distribution_channel>20</distribution_channel>\n                <currency>GBP</currency>\n            </territory_price>\n         </productData>\n      </urn:apoCatalogProductPriceUpdateParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "APO::Config - Assert Simple Price Not Updated",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "60eda52c-ea9d-4d58-8aa8-100871ca729c",
+										"type": "text/javascript",
+										"exec": [
+											""
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"id": "d9464848-7b20-4441-b24f-c0dc7f3b43e7",
+										"type": "text/javascript",
+										"exec": [
+											"var assertions = eval(globals.loadAssertions);",
+											"",
+											"// Parse result block ",
+											"var jsonObject = xml2Json(responseBody);",
+											"results_array = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductInfoResponseParam'].result;",
+											"",
+											"basic_results = {",
+											"    name: pm.environment.get(\"name\"),",
+											"    sku: pm.environment.get(\"sku\"),",
+											"    type: \"simple\",",
+											"    price: pm.environment.get(\"black_price\")",
+											"};",
+											"",
+											"assertions.parse_array(results_array, basic_results);"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductInfoRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_id}}</productId>\n         <store>0</store>\n         <attributes>\n            <attributes>\n               <complexObjectArray>price</complexObjectArray>\n               <complexObjectArray>name</complexObjectArray>\n            </attributes>\n         </attributes>\n         <productIdentifierType>productId</productIdentifierType>\n      </urn:catalogProductInfoRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam"
+							},
+							"response": []
+						},
+						{
+							"name": "APO::Config - Assert Config Price Not Updated",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var assertions = eval(globals.loadAssertions);",
+											"",
+											"// Parse result block ",
+											"var jsonObject = xml2Json(responseBody);",
+											"results_array = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductInfoResponseParam'].result;",
+											"",
+											"basic_results = {",
+											"    name: pm.environment.get(\"name\"),",
+											"    sku: pm.environment.get(\"config_sku\"),",
+											"    type: \"configurable\",",
+											"    price: pm.environment.get(\"black_price\")",
+											"};",
+											"",
+											"assertions.parse_array(results_array, basic_results);"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductInfoRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_config_id}}</productId>\n         <store>0</store>\n         <attributes>\n            <attributes>\n               <complexObjectArray>price</complexObjectArray>\n               <complexObjectArray>name</complexObjectArray>\n            </attributes>\n         </attributes>\n         <productIdentifierType>productId</productIdentifierType>\n      </urn:catalogProductInfoRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam"
+							},
+							"response": []
+						},
+						{
+							"name": "APO::Config - Special Price Update",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"red = Math.floor(Math.random() * (pm.environment.get(\"black_price\")*100) + 5)/100;",
+											"",
+											"pm.environment.set(\"red_price\", red);"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"eval(globals.updatePriceBoilerTests)();"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:apoCatalogProductPriceUpdateParam>\n         <sessionId>{{session_id}}</sessionId>\n         <sourceType>SAPPO</sourceType>\n         <productData>\n            <identifier>{{style_number}}</identifier>\n            <territory_price>\n               <special_price>{{red_price}}</special_price>\n               <sales_organisation>GB11</sales_organisation>\n               <distribution_channel>20</distribution_channel>\n               <currency>GBP</currency>\n            </territory_price>\n         </productData>\n      </urn:apoCatalogProductPriceUpdateParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "APO::Config - Assert Special Price Simple",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var jsonObject = xml2Json(responseBody);",
+											"",
+											"actual = parseFloat(jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductGetSpecialPriceResponseParam'].result.special_price);",
+											"expected = parseFloat(pm.environment.get(\"red_price\"));",
+											"",
+											"pm.test(\"Special priced updated to \" + expected, function () {",
+											"    pm.expect(expected.toFixed(2)).to.eq(actual.toFixed(2));",
+											"});"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductGetSpecialPriceRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_id}}</productId>\n         <store>0</store>\n      </urn:catalogProductGetSpecialPriceRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Verify the special price applied via the APO operation is appied."
+							},
+							"response": []
+						},
+						{
+							"name": "APO::Config - Assert Special Price Config",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "52cb3963-ec99-40b6-abfa-67e52aee2da5",
+										"type": "text/javascript",
+										"exec": [
+											"var jsonObject = xml2Json(responseBody);",
+											"",
+											"actual = parseFloat(jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductGetSpecialPriceResponseParam'].result.special_price);",
+											"expected = parseFloat(pm.environment.get(\"red_price\"));",
+											"",
+											"pm.test(\"Special priced updated to \" + actual, function () {",
+											"    pm.expect(expected.toFixed(2)).to.eq(actual.toFixed(2));",
+											"});"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductGetSpecialPriceRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_config_id}}</productId>\n         <store>0</store>\n      </urn:catalogProductGetSpecialPriceRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Verify the special price applied via the APO operation is appied."
+							},
+							"response": []
+						},
+						{
+							"name": "APO::Config - Special Price Update Blocked",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "7aa1ec1b-53eb-4e44-9e34-47495d5fe160",
+										"type": "text/javascript",
+										"exec": [
+											"red = Math.floor(Math.random() * (pm.environment.get(\"black_price\")*100) + 5)/100;",
+											"",
+											"pm.environment.set(\"blocked_red_price\", red);"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"id": "fa9cce8d-2bd6-4dd9-bffe-7ba06c7f1caf",
+										"type": "text/javascript",
+										"exec": [
+											"product_count = pm.environment.get(\"count\")",
+											"",
+											"var jsonObject = xml2Json(responseBody);",
+											"    ",
+											"created = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body'].parameters.result.created;",
+											"updated = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body'].parameters.result.updated;",
+											"failures = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body'].parameters.result.failures;",
+											"response = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body'].parameters.result.message;",
+											"    ",
+											"tests[\"Products Created: \" + created] = created === '0';",
+											"tests[\"Products Updated: \" + updated] = updated === product_count;",
+											"tests[\"Product Failures: \" + failures] = failures === '0';",
+											"tests[\"Response: \" + response] = updated === product_count;",
+											"",
+											"red_formatted = pm.environment.get(\"blocked_red_price\").toFixed(4);",
+											"",
+											"pm.environment.set(\"blocked_red_price\", red_formatted);"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:apoCatalogProductPriceUpdateParam>\n         <sessionId>{{session_id}}</sessionId>\n         <sourceType>SAPPO</sourceType>\n         <productData>\n            <identifier>{{style_number}}</identifier>\n            <territory_price>\n               <special_price>{{red_price}}</special_price>\n               <sales_organisation>GB11</sales_organisation>\n               <distribution_channel>20</distribution_channel>\n               <currency>GBP</currency>\n            </territory_price>\n         </productData>\n      </urn:apoCatalogProductPriceUpdateParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "APO::Config - Assert Special Price Simple Not Updated",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "6b7a9c31-58ea-4679-a39e-5e9fad6f74ff",
+										"type": "text/javascript",
+										"exec": [
+											"var jsonObject = xml2Json(responseBody);",
+											"",
+											"actual = parseFloat(jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductGetSpecialPriceResponseParam'].result.special_price);",
+											"expected = parseFloat(pm.environment.get(\"red_price\"));",
+											"",
+											"pm.test(\"Special not updated, remained at: \" + expected, function () {",
+											"    pm.expect(expected.toFixed(2)).to.eq(actual.toFixed(2));",
+											"});"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductGetSpecialPriceRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_id}}</productId>\n         <store>0</store>\n      </urn:catalogProductGetSpecialPriceRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Verify the special price applied via the APO operation is appied."
+							},
+							"response": []
+						},
+						{
+							"name": "APO::Config - Assert Special Price Config Not Updated",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "e0a686e2-7eea-4a0a-8fd5-834e3ad7f9d0",
+										"type": "text/javascript",
+										"exec": [
+											"var jsonObject = xml2Json(responseBody);",
+											"",
+											"actual = parseFloat(jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductGetSpecialPriceResponseParam'].result.special_price);",
+											"expected = parseFloat(pm.environment.get(\"red_price\"));",
+											"",
+											"pm.test(\"Special price not updated, remained at: \" + actual, function () {",
+											"    pm.expect(expected.toFixed(2)).to.eq(actual.toFixed(2));",
+											"});",
+											"",
+											"postman.setNextRequest(\"APO - Test Handler\");"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductGetSpecialPriceRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_config_id}}</productId>\n         <store>0</store>\n      </urn:catalogProductGetSpecialPriceRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Verify the special price applied via the APO operation is appied."
+							},
+							"response": []
+						}
+					],
+					"_postman_isSubFolder": true
+				}
+			]
+		},
+		{
+			"name": "APO - Updates",
+			"item": [
+				{
+					"name": "APO - Create Product for Updates",
+					"item": [
+						{
+							"name": "APO - Product Creation Config Updates",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"//test data => Need to be on a URL with mgnonprod, no CSV supplied and an environment var or test=true to use this",
+											"random = Math.floor(Math.random() * (999999 - 100000 + 1) ) + 20000000;",
+											"ean = Math.floor(Math.random() * (9999999999 - 1000000000 + 1) ) + 1000000000;",
+											"size_num = Math.floor(Math.random() * 4);",
+											"",
+											"size_array = [\"04\",\"06\",\"08\",\"10\",\"12\"];",
+											"size_rand = size_array[size_num];",
+											"style_number = random;",
+											"sku = style_number + \"001\";",
+											"product_name = \"Test product with stlye: \" + style_number;",
+											"",
+											"colours = {",
+											"    RED: '80006',",
+											"    BLACK: '00001'",
+											"};",
+											"",
+											"colour_values = Object.values(colours)",
+											"colour = colour_values[Math.floor(Math.random() * colour_values.length)]",
+											"config_sku = style_number + \"-\" + _.findKey(colours, _.partial(_.isEqual, colour));",
+											"",
+											"test_data = {",
+											"    sku: sku,",
+											"    clothing_size: size_rand,",
+											"    colour: colour,",
+											"    weight: \"0.001\",",
+											"    season: \"AW17\",",
+											"    product_type: \"AR102\",",
+											"    name: product_name,",
+											"    fabric_content: \"Natural Fibre\",",
+											"    harmonised_code: \"6203421100\",",
+											"    style_number: style_number,",
+											"    ean: ean,",
+											"    config_sku: config_sku,",
+											"    mg_product_type: '7413',",
+											"    count: 2",
+											"}",
+											"",
+											"for (var key in test_data) {",
+											"  if (test_data.hasOwnProperty(key)) {",
+											"    postman.setEnvironmentVariable(key, test_data[key]);",
+											"  }",
+											"}",
+											""
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var jsonObject = xml2Json(responseBody);",
+											"",
+											"// Generate Values for results",
+											"",
+											"created = jsonObject['env:Envelope']['env:Body'].parameters.result.created;",
+											"updated = jsonObject['env:Envelope']['env:Body'].parameters.result.updated;",
+											"failures = jsonObject['env:Envelope']['env:Body'].parameters.result.failures;",
+											"response = jsonObject['env:Envelope']['env:Body'].parameters.result.message;",
+											"",
+											"product_sku = jsonObject['env:Envelope']['env:Body'].parameters.result.skus;",
+											"pm.environment.set(\"product_sku\", product_sku);",
+											"magento_id = jsonObject['env:Envelope']['env:Body'].parameters.result.ids;",
+											"pm.environment.set(\"magento_id\", magento_id);",
+											"",
+											"if (failures === '1'){",
+											"    error = jsonObject['env:Envelope']['env:Body'].parameters.result.additional['SOAP-ENC:Struct'].message;",
+											"} else {",
+											"    error = \"none\"",
+											"}",
+											"",
+											"tests[\"Products Created: \" + created] = created === '1';",
+											"tests[\"Products Updated: \" + updated] = updated === '0';",
+											"tests[\"Product Failures: \" + failures] = failures === '0';",
+											"tests[\"Response: \" + response] = created === '1';",
+											"tests[\"Error Response: \" + error] = created === '1';",
+											"tests[\"Product SKU: \" + product_sku] = created === '1';",
+											"tests[\"Magento ID: \" + magento_id] = created === '1';"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\">\n  <soap:Header/>\n  <soap:Body>\n    <ns0:apoCatalogProductUpdateParam xmlns:ns0=\"urn:Magento\">\n      <sessionId>{{session_id}}</sessionId>\n      <sourceType>pm_dataloader</sourceType>\n      <productData>\n        <identifier>{{sku}}</identifier>\n        <bra_size>\n          <value/>\n        </bra_size>\n        <care_details></care_details>\n        <clothing_size>\n          <value>{{clothing_size}}</value>\n        </clothing_size>\n        <shoe_size>\n          <value/>\n        </shoe_size>\n        <colour>\n          <code>{{colour}}</code>\n        </colour>\n        <weight>\n          <value>{{weight}}</value>\n        </weight>\n        <season>{{season}}</season>\n        <product_type>\n          <value>{{product_type}}</value>\n        </product_type>\n        <name>{{name}}</name>\n        <fabric_content>\n          <code>0001</code>\n          <fibre>{{fabric_content}}</fibre>\n          <percentage>100</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <harmonised_code>{{harmonised_code}}</harmonised_code>\n        <style_number>{{style_number}}</style_number>\n        <EAN>{{ean}}</EAN>\n        <status/>\n        <cost/>\n        <product_group>{{style_number}}</product_group>\n      </productData>\n    </ns0:apoCatalogProductUpdateParam>\n  </soap:Body>\n</soap:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "SOAP_get_config_id",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var jsonObject = xml2Json(responseBody);",
+											"",
+											"config_id = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body'].parameters.result.ids",
+											"",
+											"// Use a Chai assertion for confirming configurable is found",
+											"pm.test(\"Configurable ID? \" + config_id, function () {",
+											"    pm.expect(config_id).to.have.lengthOf(6);",
+											"});",
+											"",
+											"pm.environment.set(\"magento_config_id\", config_id);"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <ns0:apoCatalogProductUpdateParam xmlns:ns0=\"urn:Magento\">\n         <sessionId>{{session_id}}</sessionId>\n         <sourceType>mg_test</sourceType>\n         <productData>\n            <identifier>{{config_sku}}</identifier>\n         </productData>\n      </ns0:apoCatalogProductUpdateParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam"
+							},
+							"response": []
+						}
+					],
+					"_postman_isSubFolder": true
+				},
+				{
+					"name": "APO - Product Type Update",
+					"item": [
+						{
+							"name": "APO - Update Product Type",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.environment.set(\"type_update\", \"AR101\")"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var jsonObject = xml2Json(responseBody);",
+											"",
+											"// Generate Values for results",
+											"",
+											"created = jsonObject['env:Envelope']['env:Body'].parameters.result.created;",
+											"updated = jsonObject['env:Envelope']['env:Body'].parameters.result.updated;",
+											"failures = jsonObject['env:Envelope']['env:Body'].parameters.result.failures;",
+											"response = jsonObject['env:Envelope']['env:Body'].parameters.result.message;",
+											"",
+											"product_sku = jsonObject['env:Envelope']['env:Body'].parameters.result.skus;",
+											"pm.environment.set(\"product_sku\", product_sku);",
+											"magento_id = jsonObject['env:Envelope']['env:Body'].parameters.result.ids;",
+											"pm.environment.set(\"magento_id\", magento_id);",
+											"",
+											"if (failures === '1'){",
+											"    error = jsonObject['env:Envelope']['env:Body'].parameters.result.additional['SOAP-ENC:Struct'].message;",
+											"} else {",
+											"    error = \"none\"",
+											"}",
+											"",
+											"tests[\"Products Created: \" + created] = created === '0';",
+											"tests[\"Products Updated: \" + updated] = updated === '1';",
+											"tests[\"Product Failures: \" + failures] = failures === '0';",
+											"tests[\"Response: \" + response] = updated === '1';",
+											"tests[\"Error Response: \" + error] = updated === '1';",
+											"tests[\"Product SKU: \" + product_sku] = updated === '1';",
+											"tests[\"Magento ID: \" + magento_id] = updated === '1';"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\">\n  <soap:Header/>\n  <soap:Body>\n    <ns0:apoCatalogProductUpdateParam xmlns:ns0=\"urn:Magento\">\n      <sessionId>{{session_id}}</sessionId>\n      <sourceType>pm_dataloader</sourceType>\n      <productData>\n        <identifier>{{sku}}</identifier>\n        <bra_size>\n          <value/>\n        </bra_size>\n        <care_details></care_details>\n        <clothing_size>\n          <value>{{clothing_size}}</value>\n        </clothing_size>\n        <shoe_size>\n          <value/>\n        </shoe_size>\n        <colour>\n          <code>{{colour}}</code>\n        </colour>\n        <weight>\n          <value>{{weight}}</value>\n        </weight>\n        <season>{{season}}</season>\n        <product_type>\n          <value>{{type_update}}</value>\n        </product_type>\n        <name>{{name}}</name>\n        <fabric_content>\n          <code>0001</code>\n          <fibre>{{fabric_content}}</fibre>\n          <percentage>100</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <harmonised_code>{{harmonised_code}}</harmonised_code>\n        <style_number>{{style_number}}</style_number>\n        <EAN>{{ean}}</EAN>\n        <status/>\n        <cost/>\n        <product_group>{{style_number}}</product_group>\n      </productData>\n    </ns0:apoCatalogProductUpdateParam>\n  </soap:Body>\n</soap:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Send a product type update request to magento. This should be accepted by the API but not update the product."
+							},
+							"response": []
+						},
+						{
+							"name": "Assert simple type not updated",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"// Add commonly used functions to the global scope",
+											"pm.globals.set(\"data_assertions\", () => {",
+											"    function assert_key_value(expected, actual, key){",
+											"        pm.test(key + \" = (Expected = \" + expected + \") => (Actual = \" + actual + \")\", function () {",
+											"         pm.expect(actual).to.eq(expected);",
+											"        });",
+											"    }",
+											"});"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var assertions = eval(globals.loadAssertions);",
+											"",
+											"// Parse result block ",
+											"var jsonObject = xml2Json(responseBody);",
+											"results_array = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductInfoResponseParam'].result;",
+											"additional_array = results_array['additional_attributes']['complexObjectArray'];",
+											"",
+											"additional_results = {",
+											"    product_type: pm.environment.get(\"mg_product_type\")",
+											"};",
+											"",
+											"assertions.parse_array(assertions.convert_additional_array(additional_array), additional_results);"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductInfoRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_id}}</productId>\n         <store>0</store>\n         <attributes>\n            <attributes>\n               <complexObjectArray>price</complexObjectArray>\n               <complexObjectArray>name</complexObjectArray>\n            </attributes>\n            <additional_attributes>\n\t\t\t\t<complexObjectArray>style_number</complexObjectArray>\n\t\t\t\t<complexObjectArray>product_type</complexObjectArray>\n           </additional_attributes>\n         </attributes>\n         <productIdentifierType>productId</productIdentifierType>\n      </urn:catalogProductInfoRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam\n\nScenario:\nAssert that product type has not been updated"
+							},
+							"response": []
+						}
+					],
+					"_postman_isSubFolder": true
+				},
+				{
+					"name": "APO - Size Update",
+					"item": [
+						{
+							"name": "APO - Update Size",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.environment.set(\"size_update\", \"14\")"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var jsonObject = xml2Json(responseBody);",
+											"",
+											"// Generate Values for results",
+											"",
+											"created = jsonObject['env:Envelope']['env:Body'].parameters.result.created;",
+											"updated = jsonObject['env:Envelope']['env:Body'].parameters.result.updated;",
+											"failures = jsonObject['env:Envelope']['env:Body'].parameters.result.failures;",
+											"response = jsonObject['env:Envelope']['env:Body'].parameters.result.message;",
+											"",
+											"product_sku = jsonObject['env:Envelope']['env:Body'].parameters.result.skus;",
+											"pm.environment.set(\"product_sku\", product_sku);",
+											"magento_id = jsonObject['env:Envelope']['env:Body'].parameters.result.ids;",
+											"pm.environment.set(\"magento_id\", magento_id);",
+											"",
+											"if (failures === '1'){",
+											"    error = jsonObject['env:Envelope']['env:Body'].parameters.result.additional['SOAP-ENC:Struct'].message;",
+											"} else {",
+											"    error = \"none\"",
+											"}",
+											"",
+											"tests[\"Products Created: \" + created] = created === '0';",
+											"tests[\"Products Updated: \" + updated] = updated === '1';",
+											"tests[\"Product Failures: \" + failures] = failures === '0';",
+											"tests[\"Response: \" + response] = updated === '1';",
+											"tests[\"Error Response: \" + error] = updated === '1';",
+											"tests[\"Product SKU: \" + product_sku] = updated === '1';",
+											"tests[\"Magento ID: \" + magento_id] = updated === '1';"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\">\n  <soap:Header/>\n  <soap:Body>\n    <ns0:apoCatalogProductUpdateParam xmlns:ns0=\"urn:Magento\">\n      <sessionId>{{session_id}}</sessionId>\n      <sourceType>pm_dataloader</sourceType>\n      <productData>\n        <identifier>{{sku}}</identifier>\n        <bra_size>\n          <value/>\n        </bra_size>\n        <care_details></care_details>\n        <clothing_size>\n          <value>{{size_update}}</value>\n        </clothing_size>\n        <shoe_size>\n          <value/>\n        </shoe_size>\n        <colour>\n          <code>{{colour}}</code>\n        </colour>\n        <weight>\n          <value>{{weight}}</value>\n        </weight>\n        <season>{{season}}</season>\n        <product_type>\n          <value>{{product_type}}</value>\n        </product_type>\n        <name>{{name}}</name>\n        <fabric_content>\n          <code>0001</code>\n          <fibre>{{fabric_content}}</fibre>\n          <percentage>100</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <harmonised_code>{{harmonised_code}}</harmonised_code>\n        <style_number>{{style_number}}</style_number>\n        <EAN>{{ean}}</EAN>\n        <status/>\n        <cost/>\n        <product_group>{{style_number}}</product_group>\n      </productData>\n    </ns0:apoCatalogProductUpdateParam>\n  </soap:Body>\n</soap:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Send a product type update request to magento. This should be accepted by the API but not update the product."
+							},
+							"response": []
+						},
+						{
+							"name": "Assert simple size is updated",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"// Add commonly used functions to the global scope",
+											"pm.globals.set(\"data_assertions\", () => {",
+											"    function assert_key_value(expected, actual, key){",
+											"        pm.test(key + \" = (Expected = \" + expected + \") => (Actual = \" + actual + \")\", function () {",
+											"         pm.expect(actual).to.eq(expected);",
+											"        });",
+											"    }",
+											"});"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var assertions = eval(globals.loadAssertions);",
+											"",
+											"// Parse result block ",
+											"var jsonObject = xml2Json(responseBody);",
+											"results_array = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductInfoResponseParam'].result;",
+											"additional_array = results_array['additional_attributes']['complexObjectArray'];",
+											"",
+											"additional_results = {",
+											"    clothing_size: \"7361\"",
+											"};",
+											"",
+											"assertions.parse_array(assertions.convert_additional_array(additional_array), additional_results);"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductInfoRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_id}}</productId>\n         <store>0</store>\n         <attributes>\n            <attributes>\n               <complexObjectArray>price</complexObjectArray>\n               <complexObjectArray>name</complexObjectArray>\n            </attributes>\n            <additional_attributes>\n\t\t\t\t<complexObjectArray>clothing_size</complexObjectArray>\n\t\t\t\t<complexObjectArray>product_type</complexObjectArray>\n           </additional_attributes>\n         </attributes>\n         <productIdentifierType>productId</productIdentifierType>\n      </urn:catalogProductInfoRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam\n\nScenario:\nAssert that product type has not been updated"
+							},
+							"response": []
+						}
+					],
+					"_postman_isSubFolder": true
+				},
+				{
+					"name": "APO - Name Update",
+					"item": [
+						{
+							"name": "APO - Update Name",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.environment.set(\"name_update\", \"new product name\")"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var jsonObject = xml2Json(responseBody);",
+											"",
+											"// Generate Values for results",
+											"",
+											"created = jsonObject['env:Envelope']['env:Body'].parameters.result.created;",
+											"updated = jsonObject['env:Envelope']['env:Body'].parameters.result.updated;",
+											"failures = jsonObject['env:Envelope']['env:Body'].parameters.result.failures;",
+											"response = jsonObject['env:Envelope']['env:Body'].parameters.result.message;",
+											"",
+											"product_sku = jsonObject['env:Envelope']['env:Body'].parameters.result.skus;",
+											"pm.environment.set(\"product_sku\", product_sku);",
+											"magento_id = jsonObject['env:Envelope']['env:Body'].parameters.result.ids;",
+											"pm.environment.set(\"magento_id\", magento_id);",
+											"",
+											"if (failures === '1'){",
+											"    error = jsonObject['env:Envelope']['env:Body'].parameters.result.additional['SOAP-ENC:Struct'].message;",
+											"} else {",
+											"    error = \"none\"",
+											"}",
+											"",
+											"tests[\"Products Created: \" + created] = created === '0';",
+											"tests[\"Products Updated: \" + updated] = updated === '1';",
+											"tests[\"Product Failures: \" + failures] = failures === '0';",
+											"tests[\"Response: \" + response] = updated === '1';",
+											"tests[\"Error Response: \" + error] = updated === '1';",
+											"tests[\"Product SKU: \" + product_sku] = updated === '1';",
+											"tests[\"Magento ID: \" + magento_id] = updated === '1';"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\">\n  <soap:Header/>\n  <soap:Body>\n    <ns0:apoCatalogProductUpdateParam xmlns:ns0=\"urn:Magento\">\n      <sessionId>{{session_id}}</sessionId>\n      <sourceType>pm_dataloader</sourceType>\n      <productData>\n        <identifier>{{sku}}</identifier>\n        <bra_size>\n          <value/>\n        </bra_size>\n        <care_details></care_details>\n        <clothing_size>\n          <value>{{clothing_size}}</value>\n        </clothing_size>\n        <shoe_size>\n          <value/>\n        </shoe_size>\n        <colour>\n          <code>{{colour}}</code>\n        </colour>\n        <weight>\n          <value>{{weight}}</value>\n        </weight>\n        <season>{{season}}</season>\n        <product_type>\n          <value>{{product_type}}</value>\n        </product_type>\n        <name>{{name_update}}</name>\n        <fabric_content>\n          <code>0001</code>\n          <fibre>{{fabric_content}}</fibre>\n          <percentage>100</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <harmonised_code>{{harmonised_code}}</harmonised_code>\n        <style_number>{{style_number}}</style_number>\n        <EAN>{{ean}}</EAN>\n        <status/>\n        <cost/>\n        <product_group>{{style_number}}</product_group>\n      </productData>\n    </ns0:apoCatalogProductUpdateParam>\n  </soap:Body>\n</soap:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Send a product type update request to magento. This should be accepted by the API but not update the product."
+							},
+							"response": []
+						},
+						{
+							"name": "Assert simple name update is rejected",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"// Add commonly used functions to the global scope",
+											"pm.globals.set(\"data_assertions\", () => {",
+											"    function assert_key_value(expected, actual, key){",
+											"        pm.test(key + \" = (Expected = \" + expected + \") => (Actual = \" + actual + \")\", function () {",
+											"         pm.expect(actual).to.eq(expected);",
+											"        });",
+											"    }",
+											"});"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var assertions = eval(globals.loadAssertions);",
+											"",
+											"// Parse result block ",
+											"var jsonObject = xml2Json(responseBody);",
+											"results_array = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductInfoResponseParam'].result;",
+											"additional_array = results_array['additional_attributes']['complexObjectArray'];",
+											"",
+											"basic_results = {",
+											"    name: pm.environment.get(\"name\"),",
+											"};",
+											"",
+											"assertions.parse_array(results_array, basic_results);"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductInfoRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_id}}</productId>\n         <store>0</store>\n         <attributes>\n            <attributes>\n               <complexObjectArray>price</complexObjectArray>\n               <complexObjectArray>name</complexObjectArray>\n            </attributes>\n            <additional_attributes>\n        <complexObjectArray>style_number</complexObjectArray>\n        <complexObjectArray>colour</complexObjectArray>\n        <complexObjectArray>colour_set_id</complexObjectArray>\n           </additional_attributes>\n         </attributes>\n         <productIdentifierType>productId</productIdentifierType>\n      </urn:catalogProductInfoRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam\n\nScenario:\nAssert that product type has not been updated"
+							},
+							"response": []
+						},
+						{
+							"name": "Assert config name update is rejected",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"// Add commonly used functions to the global scope",
+											"pm.globals.set(\"data_assertions\", () => {",
+											"    function assert_key_value(expected, actual, key){",
+											"        pm.test(key + \" = (Expected = \" + expected + \") => (Actual = \" + actual + \")\", function () {",
+											"         pm.expect(actual).to.eq(expected);",
+											"        });",
+											"    }",
+											"});"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var assertions = eval(globals.loadAssertions);",
+											"",
+											"// Parse result block ",
+											"var jsonObject = xml2Json(responseBody);",
+											"results_array = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductInfoResponseParam'].result;",
+											"additional_array = results_array['additional_attributes']['complexObjectArray'];",
+											"",
+											"basic_results = {",
+											"    name: pm.environment.get(\"name\"),",
+											"};",
+											"",
+											"assertions.parse_array(results_array, basic_results);"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductInfoRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_config_id}}</productId>\n         <store>0</store>\n         <attributes>\n            <attributes>\n               <complexObjectArray>price</complexObjectArray>\n               <complexObjectArray>name</complexObjectArray>\n            </attributes>\n            <additional_attributes>\n\t\t\t\t<complexObjectArray>style_number</complexObjectArray>\n\t\t\t\t<complexObjectArray>product_type</complexObjectArray>\n           </additional_attributes>\n         </attributes>\n         <productIdentifierType>productId</productIdentifierType>\n      </urn:catalogProductInfoRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam\n\nScenario:\nAssert that product type has not been updated"
+							},
+							"response": []
+						}
+					],
+					"_postman_isSubFolder": true
+				},
+				{
+					"name": "APO - Colour Update",
+					"item": [
+						{
+							"name": "APO - Update Colour",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.environment.set(\"colour_update\", \"70005\")"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var jsonObject = xml2Json(responseBody);",
+											"",
+											"// Generate Values for results",
+											"",
+											"created = jsonObject['env:Envelope']['env:Body'].parameters.result.created;",
+											"updated = jsonObject['env:Envelope']['env:Body'].parameters.result.updated;",
+											"failures = jsonObject['env:Envelope']['env:Body'].parameters.result.failures;",
+											"response = jsonObject['env:Envelope']['env:Body'].parameters.result.message;",
+											"",
+											"product_sku = jsonObject['env:Envelope']['env:Body'].parameters.result.skus;",
+											"pm.environment.set(\"product_sku\", product_sku);",
+											"magento_id = jsonObject['env:Envelope']['env:Body'].parameters.result.ids;",
+											"pm.environment.set(\"magento_id\", magento_id);",
+											"",
+											"if (failures === '1'){",
+											"    error = jsonObject['env:Envelope']['env:Body'].parameters.result.additional['SOAP-ENC:Struct'].message;",
+											"} else {",
+											"    error = \"none\"",
+											"}",
+											"",
+											"tests[\"Products Created: \" + created] = created === '0';",
+											"tests[\"Products Updated: \" + updated] = updated === '1';",
+											"tests[\"Product Failures: \" + failures] = failures === '0';",
+											"tests[\"Response: \" + response] = updated === '1';",
+											"tests[\"Error Response: \" + error] = updated === '1';",
+											"tests[\"Product SKU: \" + product_sku] = updated === '1';",
+											"tests[\"Magento ID: \" + magento_id] = updated === '1';"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\">\n  <soap:Header/>\n  <soap:Body>\n    <ns0:apoCatalogProductUpdateParam xmlns:ns0=\"urn:Magento\">\n      <sessionId>{{session_id}}</sessionId>\n      <sourceType>pm_dataloader</sourceType>\n      <productData>\n        <identifier>{{sku}}</identifier>\n        <bra_size>\n          <value/>\n        </bra_size>\n        <care_details></care_details>\n        <clothing_size>\n          <value>{{clothing_size}}</value>\n        </clothing_size>\n        <shoe_size>\n          <value/>\n        </shoe_size>\n        <colour>\n          <code>{{colour_update}}</code>\n        </colour>\n        <weight>\n          <value>{{weight}}</value>\n        </weight>\n        <season>{{season}}</season>\n        <product_type>\n          <value>{{product_type}}</value>\n        </product_type>\n        <name>{{name}}</name>\n        <fabric_content>\n          <code>0001</code>\n          <fibre>{{fabric_content}}</fibre>\n          <percentage>100</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <harmonised_code>{{harmonised_code}}</harmonised_code>\n        <style_number>{{style_number}}</style_number>\n        <EAN>{{ean}}</EAN>\n        <status/>\n        <cost/>\n        <product_group>{{style_number}}</product_group>\n      </productData>\n    </ns0:apoCatalogProductUpdateParam>\n  </soap:Body>\n</soap:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Send a product type update request to magento. This should be accepted by the API but not update the product."
+							},
+							"response": []
+						},
+						{
+							"name": "Assert simple colour update is accepted",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"// Add commonly used functions to the global scope",
+											"pm.globals.set(\"data_assertions\", () => {",
+											"    function assert_key_value(expected, actual, key){",
+											"        pm.test(key + \" = (Expected = \" + expected + \") => (Actual = \" + actual + \")\", function () {",
+											"         pm.expect(actual).to.eq(expected);",
+											"        });",
+											"    }",
+											"});"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var assertions = eval(globals.loadAssertions);",
+											"",
+											"// Parse result block ",
+											"var jsonObject = xml2Json(responseBody);",
+											"results_array = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductInfoResponseParam'].result;",
+											"additional_array = results_array['additional_attributes']['complexObjectArray'];",
+											"",
+											"additional_results = {",
+											"    colour: \"8311\"",
+											"};",
+											"",
+											"assertions.parse_array(assertions.convert_additional_array(additional_array), additional_results);"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductInfoRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_id}}</productId>\n         <store>0</store>\n         <attributes>\n            <attributes>\n               <complexObjectArray>price</complexObjectArray>\n               <complexObjectArray>name</complexObjectArray>\n            </attributes>\n            <additional_attributes>\n\t\t\t\t<complexObjectArray>style_number</complexObjectArray>\n\t\t\t\t<complexObjectArray>colour</complexObjectArray>\n\t\t\t\t<complexObjectArray>colour_set_id</complexObjectArray>\n           </additional_attributes>\n         </attributes>\n         <productIdentifierType>productId</productIdentifierType>\n      </urn:catalogProductInfoRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam\n\nScenario:\nAssert that product type has not been updated"
+							},
+							"response": []
+						},
+						{
+							"name": "Assert config colour update is accepted",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"// Add commonly used functions to the global scope",
+											"pm.globals.set(\"data_assertions\", () => {",
+											"    function assert_key_value(expected, actual, key){",
+											"        pm.test(key + \" = (Expected = \" + expected + \") => (Actual = \" + actual + \")\", function () {",
+											"         pm.expect(actual).to.eq(expected);",
+											"        });",
+											"    }",
+											"});"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var assertions = eval(globals.loadAssertions);",
+											"",
+											"// Parse result block ",
+											"var jsonObject = xml2Json(responseBody);",
+											"results_array = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductInfoResponseParam'].result;",
+											"additional_array = results_array['additional_attributes']['complexObjectArray'];",
+											"",
+											"additional_results = {",
+											"    colour: \"8311\"",
+											"};",
+											"",
+											"assertions.parse_array(assertions.convert_additional_array(additional_array), additional_results);"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductInfoRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_config_id}}</productId>\n         <store>0</store>\n         <attributes>\n            <attributes>\n               <complexObjectArray>price</complexObjectArray>\n               <complexObjectArray>name</complexObjectArray>\n            </attributes>\n            <additional_attributes>\n\t\t\t\t<complexObjectArray>style_number</complexObjectArray>\n\t\t\t\t<complexObjectArray>colour</complexObjectArray>\n\t\t\t\t<complexObjectArray>colour_set_id</complexObjectArray>\n           </additional_attributes>\n         </attributes>\n         <productIdentifierType>productId</productIdentifierType>\n      </urn:catalogProductInfoRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam\n\nScenario:\nAssert that product type has not been updated"
+							},
+							"response": []
+						}
+					],
+					"_postman_isSubFolder": true
+				},
+				{
+					"name": "APO - Style Number Update",
+					"item": [
+						{
+							"name": "APO - Update Style Number",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"random = Math.floor(Math.random() * (999999 - 100000 + 1) ) + 30000000;",
+											"",
+											"pm.environment.set(\"style_number_update\", random)"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var jsonObject = xml2Json(responseBody);",
+											"",
+											"// Generate Values for results",
+											"",
+											"created = jsonObject['env:Envelope']['env:Body'].parameters.result.created;",
+											"updated = jsonObject['env:Envelope']['env:Body'].parameters.result.updated;",
+											"failures = jsonObject['env:Envelope']['env:Body'].parameters.result.failures;",
+											"response = jsonObject['env:Envelope']['env:Body'].parameters.result.message;",
+											"",
+											"product_sku = jsonObject['env:Envelope']['env:Body'].parameters.result.skus;",
+											"pm.environment.set(\"product_sku\", product_sku);",
+											"magento_id = jsonObject['env:Envelope']['env:Body'].parameters.result.ids;",
+											"pm.environment.set(\"magento_id\", magento_id);",
+											"",
+											"if (failures === '1'){",
+											"    error = jsonObject['env:Envelope']['env:Body'].parameters.result.additional['SOAP-ENC:Struct'].message;",
+											"} else {",
+											"    error = \"none\"",
+											"}",
+											"",
+											"tests[\"Products Created: \" + created] = created === '0';",
+											"tests[\"Products Updated: \" + updated] = updated === '1';",
+											"tests[\"Product Failures: \" + failures] = failures === '0';",
+											"tests[\"Response: \" + response] = updated === '1';",
+											"tests[\"Error Response: \" + error] = updated === '1';",
+											"tests[\"Product SKU: \" + product_sku] = updated === '1';",
+											"tests[\"Magento ID: \" + magento_id] = updated === '1';"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\">\n  <soap:Header/>\n  <soap:Body>\n    <ns0:apoCatalogProductUpdateParam xmlns:ns0=\"urn:Magento\">\n      <sessionId>{{session_id}}</sessionId>\n      <sourceType>pm_dataloader</sourceType>\n      <productData>\n        <identifier>{{sku}}</identifier>\n        <bra_size>\n          <value/>\n        </bra_size>\n        <care_details></care_details>\n        <clothing_size>\n          <value>{{clothing_size}}</value>\n        </clothing_size>\n        <shoe_size>\n          <value/>\n        </shoe_size>\n        <colour>\n          <code>{{colour}}</code>\n        </colour>\n        <weight>\n          <value>{{weight}}</value>\n        </weight>\n        <season>{{season}}</season>\n        <product_type>\n          <value>{{product_type}}</value>\n        </product_type>\n        <name>{{name}}</name>\n        <fabric_content>\n          <code>0001</code>\n          <fibre>{{fabric_content}}</fibre>\n          <percentage>100</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <harmonised_code>{{harmonised_code}}</harmonised_code>\n        <style_number>{{style_number_update}}</style_number>\n        <EAN>{{ean}}</EAN>\n        <status/>\n        <cost/>\n        <product_group>{{style_number}}</product_group>\n      </productData>\n    </ns0:apoCatalogProductUpdateParam>\n  </soap:Body>\n</soap:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Send a product type update request to magento. This should be accepted by the API but not update the product."
+							},
+							"response": []
+						},
+						{
+							"name": "Assert style number update is accepted",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"// Add commonly used functions to the global scope",
+											"pm.globals.set(\"data_assertions\", () => {",
+											"    function assert_key_value(expected, actual, key){",
+											"        pm.test(key + \" = (Expected = \" + expected + \") => (Actual = \" + actual + \")\", function () {",
+											"         pm.expect(actual).to.eq(expected);",
+											"        });",
+											"    }",
+											"});"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var assertions = eval(globals.loadAssertions);",
+											"",
+											"// Parse result block ",
+											"var jsonObject = xml2Json(responseBody);",
+											"results_array = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductInfoResponseParam'].result;",
+											"additional_array = results_array['additional_attributes']['complexObjectArray'];",
+											"",
+											"additional_results = {",
+											"    style_number: pm.environment.get(\"style_number_update\").toString()",
+											"};",
+											"",
+											"assertions.parse_array(assertions.convert_additional_array(additional_array), additional_results);"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductInfoRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_id}}</productId>\n         <store>0</store>\n         <attributes>\n            <attributes>\n               <complexObjectArray>price</complexObjectArray>\n               <complexObjectArray>name</complexObjectArray>\n            </attributes>\n            <additional_attributes>\n\t\t\t\t<complexObjectArray>style_number</complexObjectArray>\n\t\t\t\t<complexObjectArray>colour</complexObjectArray>\n\t\t\t\t<complexObjectArray>colour_set_id</complexObjectArray>\n           </additional_attributes>\n         </attributes>\n         <productIdentifierType>productId</productIdentifierType>\n      </urn:catalogProductInfoRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam\n\nScenario:\nAssert that product type has not been updated"
+							},
+							"response": []
+						},
+						{
+							"name": "Assert config style number update is accepted",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"// Add commonly used functions to the global scope",
+											"pm.globals.set(\"data_assertions\", () => {",
+											"    function assert_key_value(expected, actual, key){",
+											"        pm.test(key + \" = (Expected = \" + expected + \") => (Actual = \" + actual + \")\", function () {",
+											"         pm.expect(actual).to.eq(expected);",
+											"        });",
+											"    }",
+											"});"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var assertions = eval(globals.loadAssertions);",
+											"",
+											"// Parse result block ",
+											"var jsonObject = xml2Json(responseBody);",
+											"results_array = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductInfoResponseParam'].result;",
+											"additional_array = results_array['additional_attributes']['complexObjectArray'];",
+											"",
+											"additional_results = {",
+											"    style_number: pm.environment.get(\"style_number_update\").toString()",
+											"};",
+											"",
+											"assertions.parse_array(assertions.convert_additional_array(additional_array), additional_results);",
+											"",
+											"postman.setNextRequest(\"APO - Test Handler\");"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductInfoRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_config_id}}</productId>\n         <store>0</store>\n         <attributes>\n            <attributes>\n               <complexObjectArray>price</complexObjectArray>\n               <complexObjectArray>name</complexObjectArray>\n            </attributes>\n            <additional_attributes>\n\t\t\t\t<complexObjectArray>style_number</complexObjectArray>\n\t\t\t\t<complexObjectArray>colour</complexObjectArray>\n\t\t\t\t<complexObjectArray>colour_set_id</complexObjectArray>\n           </additional_attributes>\n         </attributes>\n         <productIdentifierType>productId</productIdentifierType>\n      </urn:catalogProductInfoRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam\n\nScenario:\nAssert that product type has not been updated"
+							},
+							"response": []
+						}
+					],
+					"_postman_isSubFolder": true
+				},
+				{
+					"name": "APO - Product Group Update",
+					"item": [
+						{
+							"name": "APO - Product Group",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"random = Math.floor(Math.random() * (999999 - 100000 + 1) ) + 30000000;",
+											"",
+											"pm.environment.set(\"style_number_update\", random)"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var jsonObject = xml2Json(responseBody);",
+											"",
+											"// Generate Values for results",
+											"",
+											"created = jsonObject['env:Envelope']['env:Body'].parameters.result.created;",
+											"updated = jsonObject['env:Envelope']['env:Body'].parameters.result.updated;",
+											"failures = jsonObject['env:Envelope']['env:Body'].parameters.result.failures;",
+											"response = jsonObject['env:Envelope']['env:Body'].parameters.result.message;",
+											"",
+											"product_sku = jsonObject['env:Envelope']['env:Body'].parameters.result.skus;",
+											"pm.environment.set(\"product_sku\", product_sku);",
+											"magento_id = jsonObject['env:Envelope']['env:Body'].parameters.result.ids;",
+											"pm.environment.set(\"magento_id\", magento_id);",
+											"",
+											"if (failures === '1'){",
+											"    error = jsonObject['env:Envelope']['env:Body'].parameters.result.additional['SOAP-ENC:Struct'].message;",
+											"} else {",
+											"    error = \"none\"",
+											"}",
+											"",
+											"tests[\"Products Created: \" + created] = created === '0';",
+											"tests[\"Products Updated: \" + updated] = updated === '1';",
+											"tests[\"Product Failures: \" + failures] = failures === '0';",
+											"tests[\"Response: \" + response] = updated === '1';",
+											"tests[\"Error Response: \" + error] = updated === '1';",
+											"tests[\"Product SKU: \" + product_sku] = updated === '1';",
+											"tests[\"Magento ID: \" + magento_id] = updated === '1';"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\">\n  <soap:Header/>\n  <soap:Body>\n    <ns0:apoCatalogProductUpdateParam xmlns:ns0=\"urn:Magento\">\n      <sessionId>{{session_id}}</sessionId>\n      <sourceType>pm_dataloader</sourceType>\n      <productData>\n        <identifier>{{sku}}</identifier>\n        <bra_size>\n          <value/>\n        </bra_size>\n        <care_details></care_details>\n        <clothing_size>\n          <value>{{clothing_size}}</value>\n        </clothing_size>\n        <shoe_size>\n          <value/>\n        </shoe_size>\n        <colour>\n          <code>{{colour}}</code>\n        </colour>\n        <weight>\n          <value>{{weight}}</value>\n        </weight>\n        <season>{{season}}</season>\n        <product_type>\n          <value>{{product_type}}</value>\n        </product_type>\n        <name>{{name}}</name>\n        <fabric_content>\n          <code>0001</code>\n          <fibre>{{fabric_content}}</fibre>\n          <percentage>100</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <fabric_content>\n          <code/>\n          <fibre/>\n          <percentage>000</percentage>\n        </fabric_content>\n        <harmonised_code>{{harmonised_code}}</harmonised_code>\n        <style_number>{{style_number_update}}</style_number>\n        <EAN>{{ean}}</EAN>\n        <status/>\n        <cost/>\n        <product_group>TestNumber123</product_group>\n      </productData>\n    </ns0:apoCatalogProductUpdateParam>\n  </soap:Body>\n</soap:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Send a product type update request to magento. This should be accepted by the API but not update the product."
+							},
+							"response": []
+						},
+						{
+							"name": "Assert colour_set_id is not accepted",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"// Add commonly used functions to the global scope",
+											"pm.globals.set(\"data_assertions\", () => {",
+											"    function assert_key_value(expected, actual, key){",
+											"        pm.test(key + \" = (Expected = \" + expected + \") => (Actual = \" + actual + \")\", function () {",
+											"         pm.expect(actual).to.eq(expected);",
+											"        });",
+											"    }",
+											"});"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var assertions = eval(globals.loadAssertions);",
+											"",
+											"// Parse result block ",
+											"var jsonObject = xml2Json(responseBody);",
+											"results_array = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductInfoResponseParam'].result;",
+											"additional_array = results_array['additional_attributes']['complexObjectArray'];",
+											"",
+											"additional_results = {",
+											"    style_number: pm.environment.get(\"style_number_update\").toString()",
+											"};",
+											"",
+											"assertions.parse_array(assertions.convert_additional_array(additional_array), additional_results);"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductInfoRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_id}}</productId>\n         <store>0</store>\n         <attributes>\n            <attributes>\n               <complexObjectArray>price</complexObjectArray>\n               <complexObjectArray>name</complexObjectArray>\n            </attributes>\n            <additional_attributes>\n\t\t\t\t<complexObjectArray>style_number</complexObjectArray>\n\t\t\t\t<complexObjectArray>colour</complexObjectArray>\n\t\t\t\t<complexObjectArray>colour_set_id</complexObjectArray>\n           </additional_attributes>\n         </attributes>\n         <productIdentifierType>productId</productIdentifierType>\n      </urn:catalogProductInfoRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam\n\nScenario:\nAssert that product type has not been updated"
+							},
+							"response": []
+						},
+						{
+							"name": "Assert config colour_set_id is not updated",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"// Add commonly used functions to the global scope",
+											"pm.globals.set(\"data_assertions\", () => {",
+											"    function assert_key_value(expected, actual, key){",
+											"        pm.test(key + \" = (Expected = \" + expected + \") => (Actual = \" + actual + \")\", function () {",
+											"         pm.expect(actual).to.eq(expected);",
+											"        });",
+											"    }",
+											"});"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"var assertions = eval(globals.loadAssertions);",
+											"",
+											"// Parse result block ",
+											"var jsonObject = xml2Json(responseBody);",
+											"results_array = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductInfoResponseParam'].result;",
+											"additional_array = results_array['additional_attributes']['complexObjectArray'];",
+											"",
+											"additional_results = {",
+											"    style_number: pm.environment.get(\"style_number_update\").toString()",
+											"};",
+											"",
+											"assertions.parse_array(assertions.convert_additional_array(additional_array), additional_results);",
+											"",
+											"postman.setNextRequest(\"APO - Test Handler\");"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "text/xml"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductInfoRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_config_id}}</productId>\n         <store>0</store>\n         <attributes>\n            <attributes>\n               <complexObjectArray>price</complexObjectArray>\n               <complexObjectArray>name</complexObjectArray>\n            </attributes>\n            <additional_attributes>\n\t\t\t\t<complexObjectArray>style_number</complexObjectArray>\n\t\t\t\t<complexObjectArray>colour</complexObjectArray>\n\t\t\t\t<complexObjectArray>colour_set_id</complexObjectArray>\n           </additional_attributes>\n         </attributes>\n         <productIdentifierType>productId</productIdentifierType>\n      </urn:catalogProductInfoRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+								},
+								"url": {
+									"raw": "{{URL}}/api/v2_soap",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"api",
+										"v2_soap"
+									]
+								},
+								"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam\n\nScenario:\nAssert that product type has not been updated"
+							},
+							"response": []
+						}
+					],
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "b864c47c-772f-4536-9cd2-1c63fb0ed764",
+								"type": "text/javascript",
+								"exec": [
+									""
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "6eb0d017-e1a5-49c8-89a7-0f68d0a22813",
+								"type": "text/javascript",
+								"exec": [
+									""
+								]
+							}
+						}
+					],
+					"_postman_isSubFolder": true
+				}
+			]
+		},
+		{
+			"name": "APO - Product Assertions",
+			"item": [
+				{
+					"name": "SOAP_assert_product_details",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "d5be9429-9df3-45c1-af3e-31147abdcb88",
+								"type": "text/javascript",
+								"exec": [
+									"// Add commonly used functions to the global scope",
+									"pm.globals.set(\"data_assertions\", () => {",
+									"    function assert_key_value(expected, actual, key){",
+									"        pm.test(key + \" = (Expected = \" + expected + \") => (Actual = \" + actual + \")\", function () {",
+									"         pm.expect(actual).to.eq(expected);",
+									"        });",
+									"    }",
+									"});"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "7189f3ea-ac71-474d-9287-6e0a879d2d08",
+								"type": "text/javascript",
+								"exec": [
+									"var assertions = eval(globals.loadAssertions);",
+									"",
+									"// Parse result block ",
+									"var jsonObject = xml2Json(responseBody);",
+									"results_array = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductInfoResponseParam'].result;",
+									"additional_array = results_array['additional_attributes']['complexObjectArray'];",
+									"",
+									"basic_results = {",
+									"    name: pm.environment.get(\"name\"),",
+									"    sku: pm.environment.get(\"sku\"),",
+									"    type: \"simple\",",
+									"};",
+									"",
+									"additional_results = {",
+									"    style_number: pm.environment.get(\"style_number\"),",
+									"    gtin: pm.environment.get(\"ean\"),",
+									"    harmonised_code: pm.environment.get(\"harmonised_code\"),",
+									"    colour_set_id: pm.environment.get(\"style_number\"),",
+									"    visibility: '1',",
+									"    product_type: pm.environment.get(\"mg_product_type\")",
+									"};",
+									"",
+									"const complexArrayData = assertions.convert_additional_array(additional_array);",
+									"console.log(complexArrayData);",
+									"",
+									"pm.test(`url_key on simple must not be blank: value = ${complexArrayData.url_key}`, function () {",
+									"    pm.expect(complexArrayData.url_key.length).to.be.above(0);",
+									"});",
+									"",
+									"assertions.parse_array(results_array, basic_results);",
+									"assertions.parse_array(complexArrayData, additional_results);",
+									"",
+									"",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductInfoRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_id}}</productId>\n         <store>0</store>\n         <attributes>\n            <attributes>\n               <complexObjectArray>price</complexObjectArray>\n               <complexObjectArray>name</complexObjectArray>\n            </attributes>\n            <additional_attributes>\n\t\t\t\t<complexObjectArray>style_number</complexObjectArray>\n\t\t\t\t<complexObjectArray>colour</complexObjectArray>\n\t\t\t\t<complexObjectArray>colour_set_id</complexObjectArray>\n\t\t\t\t<complexObjectArray>harmonised_code</complexObjectArray>\n\t\t\t\t<complexObjectArray>fabric_content</complexObjectArray>\n\t\t\t\t<complexObjectArray>season</complexObjectArray>\n\t\t\t\t<complexObjectArray>product_type</complexObjectArray>\n\t\t\t\t<complexObjectArray>care_details</complexObjectArray>\n\t\t\t\t<complexObjectArray>gtin</complexObjectArray>\n\t\t\t\t<complexObjectArray>visibility</complexObjectArray>\n\t\t\t\t<complexObjectArray>url_key</complexObjectArray>\n           </additional_attributes>\n         </attributes>\n         <productIdentifierType>productId</productIdentifierType>\n      </urn:catalogProductInfoRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+						},
+						"url": {
+							"raw": "{{URL}}/api/v2_soap",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v2_soap"
+							]
+						},
+						"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam"
+					},
+					"response": []
+				},
+				{
+					"name": "SOAP_assert_config_details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "3a8a5552-3583-4aa0-ab2f-f75710ef7913",
+								"type": "text/javascript",
+								"exec": [
+									"var assertions = eval(globals.loadAssertions);",
+									"",
+									"// Parse result block ",
+									"var jsonObject = xml2Json(responseBody);",
+									"results_array = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductInfoResponseParam'].result;",
+									"additional_array = results_array['additional_attributes']['complexObjectArray'];",
+									"",
+									"basic_results = {",
+									"    name: pm.environment.get(\"name\"),",
+									"    sku: pm.environment.get(\"config_sku\"),",
+									"    type: \"configurable\",",
+									"};",
+									"",
+									"additional_results = {",
+									"    style_number: pm.environment.get(\"style_number\"),",
+									"// NOT USED    gtin: pm.environment.get(\"ean\"),",
+									"    harmonised_code: pm.environment.get(\"harmonised_code\"),",
+									"    colour_set_id: \"\",",
+									"    visibility: '4'",
+									"};",
+									"",
+									"const complexArrayData = assertions.convert_additional_array(additional_array);",
+									"console.log(complexArrayData);",
+									"",
+									"pm.test(`url_key on config must not be blank: value = ${complexArrayData.url_key}`, function () {",
+									"    pm.expect(complexArrayData.url_key.length).to.be.above(0);",
+									"});",
+									"",
+									"assertions.parse_array(results_array, basic_results);",
+									"assertions.parse_array(complexArrayData, additional_results);",
+									"",
+									"postman.setNextRequest(\"APO - Price Update\");"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductInfoRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_config_id}}</productId>\n         <store>0</store>\n         <attributes>\n            <attributes>\n               <complexObjectArray>price</complexObjectArray>\n               <complexObjectArray>name</complexObjectArray>\n            </attributes>\n            <additional_attributes>\n\t\t\t\t<complexObjectArray>style_number</complexObjectArray>\n\t\t\t\t<complexObjectArray>colour</complexObjectArray>\n\t\t\t\t<complexObjectArray>colour_set_id</complexObjectArray>\n\t\t\t\t<complexObjectArray>harmonised_code</complexObjectArray>\n\t\t\t\t<complexObjectArray>fabric_content</complexObjectArray>\n\t\t\t\t<complexObjectArray>season</complexObjectArray>\n\t\t\t\t<complexObjectArray>product_type</complexObjectArray>\n\t\t\t\t<complexObjectArray>care_details</complexObjectArray>\n\t\t\t\t<complexObjectArray>gtin</complexObjectArray>\n\t\t\t\t<complexObjectArray>visibility</complexObjectArray>\n\t\t\t\t<complexObjectArray>url_key</complexObjectArray>\n           </additional_attributes>\n         </attributes>\n         <productIdentifierType>productId</productIdentifierType>\n      </urn:catalogProductInfoRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+						},
+						"url": {
+							"raw": "{{URL}}/api/v2_soap",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v2_soap"
+							]
+						},
+						"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam"
+					},
+					"response": []
+				}
+			],
+			"description": "Folder containing standard product creation assertions"
+		},
+		{
+			"name": "APO - Price Initialise",
+			"item": [
+				{
+					"name": "APO - Price Update",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"black = Math.floor(Math.random() * 2000)/100 + 5;",
+									"",
+									"pm.environment.set(\"black_price\", black);"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"product_count = pm.environment.get(\"count\")",
+									"",
+									"eval(globals.updatePriceBoilerTests)();",
+									"",
+									"black_formatted = pm.environment.get(\"black_price\").toFixed(4);",
+									"",
+									"pm.environment.set(\"black_price\", black_formatted);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:apoCatalogProductPriceUpdateParam>\n         <sessionId>{{session_id}}</sessionId>\n         <sourceType>SAPPO</sourceType>\n         <productData>\n            <identifier>{{style_number}}</identifier>\n            <territory_price>\n              <price>{{black_price}}</price>\n                <sales_organisation>GB11</sales_organisation>\n                <distribution_channel>20</distribution_channel>\n                <currency>GBP</currency>\n            </territory_price>\n         </productData>\n      </urn:apoCatalogProductPriceUpdateParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+						},
+						"url": {
+							"raw": "{{URL}}/api/v2_soap",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v2_soap"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "SOAP_assert_simple_price",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Add commonly used functions to the global scope",
+									"pm.globals.set(\"data_assertions\", () => {",
+									"    function assert_key_value(expected, actual, key){",
+									"        pm.test(key + \" = (Expected = \" + expected + \") => (Actual = \" + actual + \")\", function () {",
+									"         pm.expect(actual).to.eq(expected);",
+									"        });",
+									"    }",
+									"});"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"var assertions = eval(globals.loadAssertions);",
+									"",
+									"// Parse result block ",
+									"var jsonObject = xml2Json(responseBody);",
+									"results_array = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductInfoResponseParam'].result;",
+									"",
+									"basic_results = {",
+									"    name: pm.environment.get(\"name\"),",
+									"    sku: pm.environment.get(\"sku\"),",
+									"    type: \"simple\",",
+									"    price: pm.environment.get(\"black_price\")",
+									"};",
+									"",
+									"assertions.parse_array(results_array, basic_results);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductInfoRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_id}}</productId>\n         <store>0</store>\n         <attributes>\n            <attributes>\n               <complexObjectArray>price</complexObjectArray>\n               <complexObjectArray>name</complexObjectArray>\n            </attributes>\n         </attributes>\n         <productIdentifierType>productId</productIdentifierType>\n      </urn:catalogProductInfoRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+						},
+						"url": {
+							"raw": "{{URL}}/api/v2_soap",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v2_soap"
+							]
+						},
+						"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam"
+					},
+					"response": []
+				},
+				{
+					"name": "SOAP_assert_config_price",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"var assertions = eval(globals.loadAssertions);",
+									"",
+									"// Parse result block ",
+									"var jsonObject = xml2Json(responseBody);",
+									"results_array = jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductInfoResponseParam'].result;",
+									"",
+									"basic_results = {",
+									"    name: pm.environment.get(\"name\"),",
+									"    sku: pm.environment.get(\"config_sku\"),",
+									"    type: \"configurable\",",
+									"    price: pm.environment.get(\"black_price\")",
+									"};",
+									"",
+									"assertions.parse_array(results_array, basic_results);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductInfoRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_config_id}}</productId>\n         <store>0</store>\n         <attributes>\n            <attributes>\n               <complexObjectArray>price</complexObjectArray>\n               <complexObjectArray>name</complexObjectArray>\n            </attributes>\n         </attributes>\n         <productIdentifierType>productId</productIdentifierType>\n      </urn:catalogProductInfoRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+						},
+						"url": {
+							"raw": "{{URL}}/api/v2_soap",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v2_soap"
+							]
+						},
+						"description": "Assertions using the Magento SOAP operation:\n\ncatalogProductInfoRequestParam"
+					},
+					"response": []
+				},
+				{
+					"name": "APO - Special Price Update",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"red = Math.floor(Math.random() * (pm.environment.get(\"black_price\")*100) + 5)/100;",
+									"",
+									"pm.environment.set(\"red_price\", red);"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"eval(globals.updatePriceBoilerTests)();"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:apoCatalogProductPriceUpdateParam>\n         <sessionId>{{session_id}}</sessionId>\n         <sourceType>SAPPO</sourceType>\n         <productData>\n            <identifier>{{style_number}}</identifier>\n            <territory_price>\n               <special_price>{{red_price}}</special_price>\n               <sales_organisation>GB11</sales_organisation>\n               <distribution_channel>20</distribution_channel>\n               <currency>GBP</currency>\n            </territory_price>\n         </productData>\n      </urn:apoCatalogProductPriceUpdateParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+						},
+						"url": {
+							"raw": "{{URL}}/api/v2_soap",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v2_soap"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "SOAP_assert_special_price",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"var jsonObject = xml2Json(responseBody);",
+									"",
+									"actual = parseFloat(jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductGetSpecialPriceResponseParam'].result.special_price);",
+									"expected = parseFloat(pm.environment.get(\"red_price\"));",
+									"",
+									"pm.test(\"Special priced updated to \" + expected, function () {",
+									"    pm.expect(expected.toFixed(2)).to.eq(actual.toFixed(2));",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductGetSpecialPriceRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_id}}</productId>\n         <store>0</store>\n      </urn:catalogProductGetSpecialPriceRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+						},
+						"url": {
+							"raw": "{{URL}}/api/v2_soap",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v2_soap"
+							]
+						},
+						"description": "Verify the special price applied via the APO operation is appied."
+					},
+					"response": []
+				},
+				{
+					"name": "SOAP_assert_special_price_config",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"var jsonObject = xml2Json(responseBody);",
+									"",
+									"actual = parseFloat(jsonObject['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ns1:catalogProductGetSpecialPriceResponseParam'].result.special_price);",
+									"expected = parseFloat(pm.environment.get(\"red_price\"));",
+									"",
+									"pm.test(\"Special priced updated to \" + actual, function () {",
+									"    pm.expect(expected.toFixed(2)).to.eq(actual.toFixed(2));",
+									"});",
+									"",
+									"postman.setNextRequest(\"APO - Test Handler\");"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:Magento\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <urn:catalogProductGetSpecialPriceRequestParam>\n         <sessionId>{{session_id}}</sessionId>\n         <productId>{{magento_config_id}}</productId>\n         <store>0</store>\n      </urn:catalogProductGetSpecialPriceRequestParam>\n   </soapenv:Body>\n</soapenv:Envelope>"
+						},
+						"url": {
+							"raw": "{{URL}}/api/v2_soap",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v2_soap"
+							]
+						},
+						"description": "Verify the special price applied via the APO operation is appied."
+					},
+					"response": []
+				}
+			],
+			"description": "Price updates using APO"
+		}
+	]
+}

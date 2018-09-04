@@ -1,0 +1,1069 @@
+{
+	"info": {
+		"name": "MobileConnectTests",
+		"_postman_id": "15ae191f-3f1d-1547-d389-4ce46466d5fc",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Logout",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "{{app_code}}"
+					}
+				],
+				"body": {},
+				"url": {
+					"raw": "{{url}}/mobileconnect/customer/logout",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"mobileconnect",
+						"customer",
+						"logout"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Create Customer",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"// Generate random email",
+							"user_e = Math.floor(Math.random() * 10000000);",
+							"email = user_e + \"_\" + environment.country_code + \"_\" + 'pm_test@example.com'",
+							"console.log(email)",
+							"",
+							"// Set email for entire suite",
+							"postman.setEnvironmentVariable(\"user_email\", email);",
+							"",
+							"// Set environment cookie",
+							"if (environment.country_code == 'US'){",
+							"    postman.setEnvironmentVariable(\"app_code\", \"mobapp_code=admapp2\")",
+							"} else {",
+							"    postman.setEnvironmentVariable(\"app_code\", \"mobapp_code=iosapp1\")",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "{{app_code}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "firstname",
+							"value": "David",
+							"type": "text",
+							"description": ""
+						},
+						{
+							"key": "lastname",
+							"value": "Skinner",
+							"type": "text",
+							"description": ""
+						},
+						{
+							"key": "email",
+							"value": "{{user_email}}",
+							"type": "text",
+							"description": ""
+						},
+						{
+							"key": "dob",
+							"value": "1991-06-21",
+							"type": "text",
+							"description": ""
+						},
+						{
+							"key": "password",
+							"value": "Tester01",
+							"type": "text",
+							"description": ""
+						},
+						{
+							"key": "confirmation",
+							"value": "Tester01",
+							"type": "text",
+							"description": ""
+						}
+					]
+				},
+				"url": {
+					"raw": "{{url}}/mobileconnect/customer/save",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"mobileconnect",
+						"customer",
+						"save"
+					]
+				},
+				"description": "Create Customer / Register"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Product Details",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"var jsonObject = xml2Json(responseBody);",
+							"",
+							"size_array = []",
+							"sizes = jsonObject.product.product.options.option.value",
+							"",
+							"sizes.forEach(function(val){",
+							"    size_array.push(val.$.code);",
+							"});",
+							"",
+							"size = Math.floor(Math.random() * (size_array.length - 1));",
+							"",
+							"postman.setEnvironmentVariable(\"size\", size_array[size]);",
+							""
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "{{app_code}}"
+					}
+				],
+				"body": {},
+				"url": {
+					"raw": "{{url}}/mobileconnect/catalog/product/id/{{product_id}}",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"mobileconnect",
+						"catalog",
+						"product",
+						"id",
+						"{{product_id}}"
+					]
+				},
+				"description": ""
+			},
+			"response": [
+				{
+					"id": "d982d128-a979-4c1d-9058-77d3f93eb0c1",
+					"name": "TJ411747",
+					"originalRequest": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Cookie",
+								"value": "{{app_code}}",
+								"enabled": true,
+								"disabled": false
+							}
+						],
+						"body": {},
+						"url": {
+							"raw": "{{url}}/mobileconnect/catalog/product/id/{{product_id}}",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"mobileconnect",
+								"catalog",
+								"product",
+								"id",
+								"{{product_id}}"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "xml",
+					"_postman_previewtype": "text",
+					"header": [
+						{
+							"key": "Age",
+							"value": "0",
+							"name": "Age",
+							"description": "The age the object has been in a proxy cache in seconds"
+						},
+						{
+							"key": "Cache-Control",
+							"value": "no-store",
+							"name": "Cache-Control",
+							"description": "Tells all caching mechanisms from server to client whether they may cache this object. It is measured in seconds"
+						},
+						{
+							"key": "Connection",
+							"value": "keep-alive",
+							"name": "Connection",
+							"description": "Options that are desired for the connection"
+						},
+						{
+							"key": "Content-Encoding",
+							"value": "gzip",
+							"name": "Content-Encoding",
+							"description": "The type of encoding used on the data."
+						},
+						{
+							"key": "Content-Type",
+							"value": "text/xml; charset=UTF-8",
+							"name": "Content-Type",
+							"description": "The mime type of this content"
+						},
+						{
+							"key": "Date",
+							"value": "Tue, 28 Mar 2017 11:06:00 GMT",
+							"name": "Date",
+							"description": "The date and time that the message was sent"
+						},
+						{
+							"key": "Expires",
+							"value": "Tue, 28 Feb 2017 11:06:00 GMT",
+							"name": "Expires",
+							"description": "Gives the date/time after which the response is considered stale"
+						},
+						{
+							"key": "P3p",
+							"value": "CP=\"CAO PSA OUR\"",
+							"name": "P3p",
+							"description": "This header is supposed to set P3P policy, in the form of P3P:CP=\"your_compact_policy\". However, P3P did not take off, most browsers have never fully implemented it, a lot of websites set this header with fake policy text, that was enough to fool browsers the existence of P3P policy and grant permissions for third party cookies."
+						},
+						{
+							"key": "Pragma",
+							"value": "no-cache",
+							"name": "Pragma",
+							"description": "Implementation-specific headers that may have various effects anywhere along the request-response chain."
+						},
+						{
+							"key": "Set-Cookie",
+							"value": "frontend=srd7bn073vufmog769l6mb66j6; expires=Tue, 04-Apr-2017 11:06:00 GMT; path=/; domain=www.missguided.co.uk; httponly",
+							"name": "Set-Cookie",
+							"description": "an HTTP cookie"
+						},
+						{
+							"key": "Transfer-Encoding",
+							"value": "chunked",
+							"name": "Transfer-Encoding",
+							"description": "The form of encoding used to safely transfer the entity to the user. Currently defined methods are: chunked, compress, deflate, gzip, identity."
+						},
+						{
+							"key": "Vary",
+							"value": "Accept-Encoding",
+							"name": "Vary",
+							"description": "Tells downstream proxies how to match future request headers to decide whether the cached response can be used rather than requesting a fresh one from the origin server."
+						},
+						{
+							"key": "Via",
+							"value": "1.1 4301cae4279742217ac2404c33644d60.cloudfront.net (CloudFront)",
+							"name": "Via",
+							"description": "Informs the client of proxies through which the response was sent."
+						},
+						{
+							"key": "X-Amz-Cf-Id",
+							"value": "OxdUuVpcJaslH1f7px6yGK2zDfVBhgzFgaz_qG4t7phLmrVMy_EQJw==",
+							"name": "X-Amz-Cf-Id",
+							"description": "Custom header"
+						},
+						{
+							"key": "X-Cache",
+							"value": "Miss from cloudfront",
+							"name": "X-Cache",
+							"description": "Custom header"
+						},
+						{
+							"key": "X-DODN-Id",
+							"value": "34387F57:7949_AC1C28F8:01BB_58DA4394_112317D:2957",
+							"name": "X-DODN-Id",
+							"description": "Custom header"
+						},
+						{
+							"key": "X-DODN-Region",
+							"value": "euwest1",
+							"name": "X-DODN-Region",
+							"description": "Custom header"
+						},
+						{
+							"key": "X-Frame-Options",
+							"value": "SAMEORIGIN",
+							"name": "X-Frame-Options",
+							"description": "Clickjacking protection: \"deny\" - no rendering within a frame, \"sameorigin\" - no rendering if origin mismatch"
+						},
+						{
+							"key": "X-VCache",
+							"value": "MISS",
+							"name": "X-VCache",
+							"description": "Custom header"
+						},
+						{
+							"key": "X-Varnish",
+							"value": "95682896",
+							"name": "X-Varnish",
+							"description": "Custom header"
+						}
+					],
+					"cookie": [
+						{
+							"expires": "Tue Apr 04 2017 11:06:00 GMT+0100 (BST)",
+							"httpOnly": true,
+							"domain": "www.missguided.co.uk",
+							"path": "/",
+							"secure": false,
+							"value": "srd7bn073vufmog769l6mb66j6",
+							"key": "frontend"
+						},
+						{
+							"expires": "Tue Apr 04 2017 11:05:56 GMT+0100 (BST)",
+							"httpOnly": false,
+							"domain": "www.missguided.co.uk",
+							"path": "/",
+							"secure": false,
+							"value": "1",
+							"key": "csitag.account"
+						},
+						{
+							"expires": "Tue Apr 04 2017 11:05:56 GMT+0100 (BST)",
+							"httpOnly": false,
+							"domain": "www.missguided.co.uk",
+							"path": "/",
+							"secure": false,
+							"value": "1",
+							"key": "csitag.topcart"
+						}
+					],
+					"responseTime": 529,
+					"body": "<product>\n   <entity_id>463120</entity_id>\n   <name>Black Split Front Mesh Tunic Top</name>\n   <entity_type>configurable</entity_type>\n   <short_description>\r\nRegular fit - stretch fit \r\n\r\n95% polyester, 5% Elastane\r\n\r\nApprox length: 130cm/51&quot; (Based on a UK size 8 sample) \r\n\r\nJoanna wears a UK size 8 / EU size 36 / US size 4 and her height is 5&apos;7&quot;\r\n\r\n\r\n</short_description>\n   <description>&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Strict//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd&quot;&gt;\n&lt;html xmlns=&quot;http://www.w3.org/1999/xhtml&quot; xml:lang=&quot;en&quot; lang=&quot;en&quot;&gt;\n&lt;head&gt;\n&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;style.css&quot; media=&quot;screen&quot;/&gt;\n&lt;/head&gt;\n&lt;body&gt;Mesh it up wearing this black tunic top. It&apos;s at the top of our lust have list with its split front, mesh fabric and tunic style. You&apos;ll be snaring the spotlight wearing this!&lt;/body&gt;&lt;/html&gt;</description>\n   <link>https://www.missguided.co.uk/black-split-front-mesh-tunic-top</link>\n   <images>\n      <image is_base_image=\"1\" is_small_image=\"1\" is_thumbnail=\"1\">https://media.missguided.com/s/missguided/TJ411747_set/1/black-split-front-mesh-tunic-top?$POQ__STD--1x$</image>\n   </images>\n   <in_stock>1</in_stock>\n   <is_salable>1</is_salable>\n   <has_gallery>0</has_gallery>\n   <has_options>1</has_options>\n   <rating_summary>0</rating_summary>\n   <reviews_count/>\n   <price_list>\n      <prices id=\"price\">\n         <price id=\"regular\" label=\"Unit Price\" formatted_value=\"£15.00\">15</price>\n      </prices>\n   </price_list>\n   <additional_attributes>\n      <item>\n         <label>Care Details</label>\n         <value>Hand Wash</value>\n      </item>\n   </additional_attributes>\n   <related_products/>\n   <product id=\"463120\">\n      <options>\n         <option code=\"super_attribute[164]\" type=\"select\" label=\"Size\" is_required=\"1\">\n            <value code=\"7399\" label=\"4\"/>\n            <value code=\"7357\" label=\"6\"/>\n            <value code=\"7358\" label=\"8\"/>\n            <value code=\"7359\" label=\"10\"/>\n            <value code=\"7360\" label=\"12\"/>\n            <value code=\"7361\" label=\"14\"/>\n            <value code=\"7362\" label=\"16\"/>\n         </option>\n      </options>\n   </product>\n</product>\n"
+				}
+			]
+		},
+		{
+			"name": "Add Product To Bag",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "{{app_code}}"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "qty",
+							"value": "1",
+							"type": "text",
+							"warning": ""
+						},
+						{
+							"key": "product",
+							"value": "{{product_id}}",
+							"type": "text",
+							"warning": ""
+						},
+						{
+							"key": "super_attribute[164]",
+							"value": "{{size}}",
+							"type": "text",
+							"warning": ""
+						}
+					]
+				},
+				"url": {
+					"raw": "{{url}}/mobileconnect/cart/add",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"mobileconnect",
+						"cart",
+						"add"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Save Address",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"test_data = {",
+							"    country_code: environment.country_code,",
+							"    first_name: \"postman\",",
+							"    last_name: \"test_user\",",
+							"    telephone: \"07777777777\",",
+							"    street: \"Test Street 01\"",
+							"};",
+							"    ",
+							"if (environment.country_code.toUpperCase() === 'US') {",
+							"    test_data['post_code'] = '20500'",
+							"    test_data['city'] = 'Washington DC'",
+							"    test_data['region_id'] = '41'",
+							"} else {",
+							"    test_data['country_code'] = 'GB'",
+							"    test_data['post_code'] = 'M17 1ES'",
+							"    test_data['city'] = 'Manchester'",
+							"    test_data['region_id'] = ''",
+							"}    ",
+							"",
+							"for (var key in test_data) {",
+							"  if (test_data.hasOwnProperty(key)) {",
+							"    postman.setEnvironmentVariable(key, test_data[key]);",
+							"  }",
+							"}",
+							""
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "{{app_code}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "default_shipping",
+							"value": "0",
+							"type": "text",
+							"description": ""
+						},
+						{
+							"key": "country_id",
+							"value": "{{country_code}}",
+							"type": "text",
+							"description": ""
+						},
+						{
+							"key": "postcode",
+							"value": "{{post_code}}",
+							"type": "text",
+							"description": ""
+						},
+						{
+							"key": "lastname",
+							"value": "{{last_name}}",
+							"type": "text",
+							"description": ""
+						},
+						{
+							"key": "firstname",
+							"value": "{{first_name}}",
+							"type": "text",
+							"description": ""
+						},
+						{
+							"key": "default_billing",
+							"value": "0",
+							"type": "text",
+							"description": ""
+						},
+						{
+							"key": "city",
+							"value": "{{city}}",
+							"type": "text",
+							"description": ""
+						},
+						{
+							"key": "street[]",
+							"value": "{{street}}",
+							"type": "text",
+							"description": ""
+						},
+						{
+							"key": "telephone",
+							"value": "{{telephone}}",
+							"type": "text",
+							"description": ""
+						},
+						{
+							"key": "region_id",
+							"value": "{{region_id}}",
+							"type": "text",
+							"description": ""
+						}
+					]
+				},
+				"url": {
+					"raw": "{{url}}/mobileconnect/customer/saveaddress",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"mobileconnect",
+						"customer",
+						"saveaddress"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Get Address_id",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"var jsonObject = xml2Json(responseBody);",
+							"",
+							"console.log(jsonObject)",
+							"",
+							"postman.setEnvironmentVariable(\"address_id\", jsonObject.address_massaction.address_list.item.entity_id);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "{{app_code}}"
+					}
+				],
+				"body": {},
+				"url": {
+					"raw": "{{url}}/mobileconnect/checkout/index",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"mobileconnect",
+						"checkout",
+						"index"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Post Shipping Address",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"var jsonObject = xml2Json(responseBody);",
+							"",
+							"shipping = jsonObject.shipping_methods.method;",
+							"",
+							"function isArray(what) {",
+							"    return Object.prototype.toString.call(what) === '[object Array]';",
+							"}",
+							"",
+							"if (isArray(shipping)) {",
+							"    rates_array = shipping[0].rates;",
+							"} else {",
+							"    rates_array = shipping.rates;",
+							"}",
+							"",
+							"if (isArray(rates_array.rate)) {",
+							"    code = rates_array.rate[0].$.code;",
+							"} else {",
+							"    code = rates_array.rate.$.code;",
+							"}",
+							"",
+							"postman.setEnvironmentVariable(\"delivery_method\", code);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "{{app_code}}"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "billing_address_id",
+							"value": "{{address_id}}",
+							"type": "text",
+							"warning": ""
+						},
+						{
+							"key": "shipping_address_id",
+							"value": "{{address_id}}",
+							"type": "text",
+							"warning": ""
+						}
+					]
+				},
+				"url": {
+					"raw": "{{url}}/mobileconnect/checkout/saveaddressinfo",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"mobileconnect",
+						"checkout",
+						"saveaddressinfo"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Save shipping method",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "{{app_code}}"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "shipping_method",
+							"value": "{{delivery_method}}",
+							"type": "text",
+							"warning": ""
+						}
+					]
+				},
+				"url": {
+					"raw": "{{url}}/mobileconnect/checkout/saveshippingmethod",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"mobileconnect",
+						"checkout",
+						"saveshippingmethod"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Save Payment",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"var jsonObject = xml2Json(responseBody);",
+							"",
+							"var a = jsonObject.order.totals.total",
+							"var total",
+							"",
+							"a.forEach(function(value){",
+							"    console.log(value)",
+							"    if (value.$.id == 'total_grand_total'){",
+							"        total = value.item.$.formatted_value",
+							"    }",
+							"})",
+							"",
+							"var total_f = total.substr(1)",
+							"var total_fl = total_f.replace('.', '');",
+							"var total_cost = parseInt(total_fl)",
+							"",
+							"pm.environment.set(\"total_cost\", total_cost);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "{{app_code}}"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "payment[method]",
+							"value": "stripe_external",
+							"type": "text",
+							"warning": ""
+						}
+					]
+				},
+				"url": {
+					"raw": "{{url}}/mobileconnect/checkout/savepayment",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"mobileconnect",
+						"checkout",
+						"savepayment"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Save Order",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"var jsonObject = xml2Json(responseBody);",
+							"",
+							"postman.setEnvironmentVariable(\"order_id\", jsonObject.message.order_id);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "{{app_code}}"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "payment[method]",
+							"value": "stripe_external",
+							"type": "text",
+							"warning": ""
+						}
+					]
+				},
+				"url": {
+					"raw": "{{url}}/mobileconnect/checkout/saveorder",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"mobileconnect",
+						"checkout",
+						"saveorder"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Stripe - Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"var jsonData = JSON.parse(responseBody);",
+							"",
+							"postman.setEnvironmentVariable(\"stripe_token\", jsonData.id);",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"tests[\"Status code is 200\"] = jsonData.id !== null;"
+						]
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"if (environment.country_code.toUpperCase() === 'US') {",
+							"    postman.setEnvironmentVariable(\"stripe_public\", \"pk_test_CEZIRC8kKjCYZ1jJcUPmwQqI\");",
+							"} else {",
+							"    postman.setEnvironmentVariable(\"stripe_public\", \"pk_test_Kh4lRujxY4hWI7j8xguSL6cv\");",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "card[address_line1]",
+							"value": "Sheffield Technology Parks",
+							"type": "text",
+							"description": ""
+						},
+						{
+							"key": "card[address_zip]",
+							"value": "S1 2NS",
+							"type": "text",
+							"description": ""
+						},
+						{
+							"key": "card[cvc]",
+							"value": "123",
+							"type": "text",
+							"description": ""
+						},
+						{
+							"key": "card[exp_month]",
+							"value": "11",
+							"type": "text",
+							"description": ""
+						},
+						{
+							"key": "card[exp_year]",
+							"value": "2025",
+							"type": "text",
+							"description": ""
+						},
+						{
+							"key": "card[number]",
+							"value": "4242 4242 4242 4242",
+							"type": "text",
+							"description": ""
+						},
+						{
+							"key": "key",
+							"value": "{{stripe_public}}",
+							"type": "text",
+							"description": ""
+						},
+						{
+							"key": "payment_user_agent",
+							"value": "stripe.js/e9cebac",
+							"type": "text",
+							"description": ""
+						}
+					]
+				},
+				"url": {
+					"raw": "https://api.stripe.com/v1/tokens",
+					"protocol": "https",
+					"host": [
+						"api",
+						"stripe",
+						"com"
+					],
+					"path": [
+						"v1",
+						"tokens"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Stripe - Create Charge",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"var jsonData = pm.response.json();",
+							"",
+							"pm.environment.set(\"charge_id\", jsonData.id);"
+						]
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"if (environment.country_code.toUpperCase() === 'US') {",
+							"    postman.setEnvironmentVariable(\"currency\", \"usd\");",
+							"    postman.setEnvironmentVariable(\"basic_auth\", environment.US_sk_auth);",
+							"} else {",
+							"    postman.setEnvironmentVariable(\"currency\", \"gbp\");",
+							"    postman.setEnvironmentVariable(\"basic_auth\", environment.UK_sk_auth);",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					},
+					{
+						"key": "Authorization",
+						"value": "{{basic_auth}}"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"disabled": false,
+							"description": {
+								"content": "",
+								"type": "text/plain"
+							},
+							"key": "amount",
+							"value": "{{total_cost}}",
+							"type": "text"
+						},
+						{
+							"disabled": false,
+							"description": {
+								"content": "",
+								"type": "text/plain"
+							},
+							"key": "source",
+							"value": "{{stripe_token}}",
+							"type": "text"
+						},
+						{
+							"disabled": false,
+							"description": {
+								"content": "",
+								"type": "text/plain"
+							},
+							"key": "currency",
+							"value": "{{currency}}",
+							"type": "text"
+						},
+						{
+							"disabled": false,
+							"description": {
+								"content": "",
+								"type": "text/plain"
+							},
+							"key": "description",
+							"value": "{{order_id}}",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://api.stripe.com/v1/charges",
+					"protocol": "https",
+					"host": [
+						"api",
+						"stripe",
+						"com"
+					],
+					"path": [
+						"v1",
+						"charges"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Save Invoice",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "{{app_code}}"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "transaction_id",
+							"value": "{{charge_id}}",
+							"type": "text",
+							"warning": ""
+						},
+						{
+							"key": "order_id",
+							"value": "{{order_id}}",
+							"type": "text",
+							"warning": ""
+						},
+						{
+							"key": "status",
+							"value": "",
+							"type": "text",
+							"warning": ""
+						}
+					]
+				},
+				"url": {
+					"raw": "{{url}}/mobileconnect/checkout/savestripetxn",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"mobileconnect",
+						"checkout",
+						"savestripetxn"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		}
+	]
+}
